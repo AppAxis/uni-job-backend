@@ -7,10 +7,6 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/AppAxis/uni-job-backend.git"
-  },
   "author": "",
   "license": "ISC",
   "dependencies": {
