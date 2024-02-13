@@ -46,8 +46,8 @@ const userSchema =  new Schema(
       
         role :{
             type: String,
-            enum :['JobSeeker','Recruiter'],
-            default: 'JobSeeker'
+            enum :['jobSeeker','recruiter'],
+            default: 'jobSeeker'
         },
         coins:{
             type: Number,
@@ -64,7 +64,7 @@ const jobSeekerSchema = new Schema(
     {
       type: {
         type: String,
-        enum: ['Junior', 'Confirmed', 'Senior'],
+        enum: ['junior', 'confirmed', 'senior'],
       },
       skills: {
         type: [String],
@@ -81,7 +81,7 @@ const jobSeekerSchema = new Schema(
     {
       type: {
         type: String,
-        enum: ['Company', 'Individual', 'Recruitment_agency', 'Headhunter'],
+        enum: ['company', 'individual', 'recruitment_agency', 'headhunter'],
       },
       workspace_images: {
         type: String,
