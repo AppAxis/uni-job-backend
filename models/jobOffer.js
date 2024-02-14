@@ -10,7 +10,6 @@ const jobOfferSchema = new Schema({
    //full time or intern
   employment: {
     type: String,
-    required: true,
   },
   jobLocation: {
     type: String,
@@ -34,7 +33,7 @@ const jobOfferSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['CDD', 'CDI', 'freelance', 'part-time', 'full-time', 'remote'],
+    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote'],
   },
   job_responsibilities: {
     type: [String],
