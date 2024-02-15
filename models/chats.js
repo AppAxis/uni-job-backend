@@ -4,19 +4,29 @@ const { Schema, model } = mongoose;
 
 const chatSchema = new Schema(
   {
-    senderid:{
-        type: Schema.Types.ObjectId,
-        required: true
+    user: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
-    receiverid:{
-        type: Schema.Types.ObjectId,
-        required: true
+    recruiter: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
     },
-    msgContent: {
-      type: String,
-      required: true,
-    },
-    type: { type: String, enum: ['message', 'image', 'file'] },
+    message:[ {
+      senderid:{
+          type: Schema.Types.ObjectId,
+          required: true
+      },
+      receiverid:{
+          type: Schema.Types.ObjectId,
+          required: true
+      },
+      msgContent: {
+        type: String,
+        required: true,
+      },
+      type: { type: String, enum: ['message', 'image', 'file'] },
+    },],
   },
   {
     timestamps: true,

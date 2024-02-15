@@ -12,7 +12,12 @@ const jobOfferSchema = new Schema({
     type: String,
   },
   jobLocation: {
-    type: String,
+  lat:{
+    type: Number,
+  },
+  long:{
+    type: Number,
+  },
   },
   salary: {
     type: Number,
@@ -24,6 +29,15 @@ const jobOfferSchema = new Schema({
   beginning_date: {
     type: Date,
   },
+   // Add closing date for application deadline
+  closingDate: {
+    type: Date,
+  },
+  // Add maximum number of applications
+  maxApplications: { 
+    type: Number,
+
+  },
   requirements: {
     type: [String],
   },
@@ -33,7 +47,7 @@ const jobOfferSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote'],
+    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote','alternation'],
   },
   job_responsibilities: {
     type: [String],
@@ -43,20 +57,14 @@ postedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Recruiter',
 },
-/*appliedBy: [
+appliedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
     },
-  ],*/
+  ],
 
-appliedBy: [
-    //array containing information of seekers who have applied
-    {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'JobSeeker',
-    },
-],
+
 },
 {
   timestamps: true,

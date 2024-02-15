@@ -21,6 +21,7 @@ const jobApplicationSchema = new Schema(
         type: Boolean,
         default:false,  
     },
+    //cover letter
     message:{
         type:String,
     },
