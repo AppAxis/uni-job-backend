@@ -282,7 +282,18 @@ try{
 
 });
 
-
+const loadAuth = (req,res)=>{
+    res.render('auth')
+}
+const successGoogleLogin = (req,res)=>{
+    if(!req.user)
+    res.redirect('/failure');
+console.log(req.user);
+res.send("welcome"+req.user.email);
+}
+const failureGoogleLogin = (req,res)=>{
+    res.send("Error");
+}
 module.exports = {
 signup,
 signin,
@@ -292,4 +303,7 @@ forgetPassword,
 resetPassword,
 changePassword, 
 editProfileImage,
+loadAuth,
+successGoogleLogin,
+failureGoogleLogin,
 }
