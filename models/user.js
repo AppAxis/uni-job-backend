@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import validator from "validator";
+const mongoose = require("mongoose");
+const validator = require("validator");
 const { Schema, model } = mongoose;
 
 const userSchema = new Schema(
@@ -39,7 +39,6 @@ const userSchema = new Schema(
     },
     profileImg: {
       type: String,
-      required: false,
     },
     domain: {
       type: String,
@@ -52,6 +51,10 @@ const userSchema = new Schema(
     coins: {
       type: Number,
       required: false,
+    },
+    token: {
+      type: String,
+      default: '', 
     },
   },
   {
@@ -84,7 +87,7 @@ const recruiterSchema = new Schema(
       enum: ['company', 'individual', 'recruitment_agency', 'headhunter'],
     },
     workspace_images: {
-      type: String,
+      type:[ String],
     },
   },
   { discriminatorKey: 'role' } 
@@ -99,4 +102,4 @@ const JobSeeker = User.discriminator('JobSeeker', jobSeekerSchema);
 // Define the Recruiter model using the Recruiter schema as a discriminator
 const Recruiter = User.discriminator('Recruiter', recruiterSchema);
 
-export { User, JobSeeker, Recruiter };
+module.exports = { User, JobSeeker, Recruiter };

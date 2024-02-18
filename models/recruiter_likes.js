@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+const mongoose = require("mongoose");
+
 
 const { Schema, model } = mongoose;
 
@@ -22,6 +23,7 @@ const likesSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    // recruiter like the candidat profile
     message: {
       type: String,
     },
