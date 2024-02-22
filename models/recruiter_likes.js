@@ -1,5 +1,4 @@
-const mongoose = require("mongoose");
-
+import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
@@ -23,14 +22,14 @@ const likesSchema = new Schema(
       type: Boolean,
       default: false,
     },
-    // recruiter like the candidat profile
+    // recruiter like the candidate profile
     message: {
       type: String,
     },
     dateLiked: {
-        type: Date,
-        default: Date.now,
-      },
+      type: Date,
+      default: Date.now,
+    },
   },
   {
     timestamps: true,

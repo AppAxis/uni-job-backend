@@ -1,38 +1,36 @@
-const jwt = require('jsonwebtoken');
-const asyncHandler = require('express-async-handler');
-const { User } = require('../models/user.js');
+import jwt from 'jsonwebtoken';
+import { User } from '../models/user.js';
 
-const protect = asyncHandler(async (req, res, next) => {
+export async function protect(req, res, next) {
   let token;
 
-  if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-    try {
+  try {
+    // Check if authorization header exists
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       // Get token from header
       token = req.headers.authorization.split(' ')[1];
 
       // Verify token
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-      // Use the base User model to find the user
-      const user = await User.findById(decoded.id);
-
-      if (!user) {
-        return res.status(401).json({ error: 'Not authorized' });
-      }
-
-      // Attach the user to the request object
-      req.user = user;
+      // Get user from the token
+      req.user = await User.findById(decoded.id).select('-password');
 
       next();
-    } catch (error) {
-      console.error(error);
-      return res.status(401).json({ error: 'Not authorized' });
+    } else {
+      res.status(401).send({ success: false, message: 'Not authorized, no token' });
     }
+  } catch (error) {
+    console.error(error);
+    res.status(401).send({ success: false, message: 'Not authorized' });
   }
+}
+export function validatorRole(allowedRoles) {
+  return async function (req, res, next) {
+    if (!req.user || !allowedRoles.includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: "Unauthorized" });
+    }
+    next();
+  };
+}
 
-  if (!token) {
-    return res.status(401).json({ error: 'Not authorized, no token' });
-  }
-});
-
-module.exports = { protect };

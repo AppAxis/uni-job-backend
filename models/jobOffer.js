@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
@@ -7,17 +7,17 @@ const jobOfferSchema = new Schema({
     type: String,
     required: true,
   },
-   //full time or intern
+  // full time or intern
   employment: {
     type: String,
   },
   jobLocation: {
-  lat:{
-    type: Number,
-  },
-  long:{
-    type: Number,
-  },
+    lat: {
+      type: Number,
+    },
+    long: {
+      type: Number,
+    },
   },
   salary: {
     type: Number,
@@ -25,46 +25,43 @@ const jobOfferSchema = new Schema({
   postedOn: {
     type: Date,
     default: Date.now,
-},
+  },
   beginning_date: {
     type: Date,
   },
-   // Add closing date for application deadline
+  // Add closing date for application deadline
   closingDate: {
     type: Date,
   },
   // Add maximum number of applications
-  maxApplications: { 
+  maxApplications: {
     type: Number,
-
   },
   requirements: {
     type: [String],
   },
   description: {
     type: String,
-    required:true,
+    required: true,
   },
   type: {
     type: String,
-    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote','alternation'],
+    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote', 'alternation'],
   },
   job_responsibilities: {
     type: [String],
   },
-//information of recruiter that has posted the job
-postedBy: {
+  // information of recruiter that has posted the job
+  postedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Recruiter',
-},
-appliedBy: [
+  },
+  appliedBy: [
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
     },
   ],
-
-
 },
 {
   timestamps: true,

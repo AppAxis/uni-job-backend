@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from 'mongoose';
 
 const { Schema, model } = mongoose;
 
@@ -17,17 +17,17 @@ const jobApplicationSchema = new Schema(
       enum: ['pending', 'accepted', 'rejected'],
       default: 'pending',
     },
-    isSuper:{
-        type: Boolean,
-        default:false,  
+    isSuper: {
+      type: Boolean,
+      default: false,
     },
-    //cover letter
-    message:{
-        type:String,
+    // cover letter
+    message: {
+      type: String,
     },
-    dateOfApplication:{
-        type:Date,
-        default: Date.now(),
+    dateOfApplication: {
+      type: Date,
+      default: Date.now(),
     }
   },
   {

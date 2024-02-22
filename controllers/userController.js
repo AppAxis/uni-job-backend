@@ -1,49 +1,91 @@
-const jwt = require ('jsonwebtoken');
-const bcrypt = require ('bcryptjs');
-const asyncHandler = require('express-async-handler');
-const { User, JobSeeker, Recruiter } = require('../models/user.js');
-const generateToken = require('./utils/generateToken.js');
-const nodemailer = require('nodemailer');
-const randomstring = require('randomstring');
+import bcrypt from 'bcryptjs';
+import { User,JobSeeker,Recruiter} from '../models/user.js';
+import generateToken from './utils/generateToken.js';
+import otpGenerator from 'otp-generator';
+import { resetMail } from "./utils/mailer.js";
+import path from "path"
+import fs from "fs"
+
+
+
+/** middleware for verify user */
+export async function verifyUser(req, res, next) {
+  try {
+    const { email } = req.method === "GET" ? req.query : req.body;
+
+    // Check the user existence
+    const exist = await User.findOne({ email });
+
+    if (!exist) {
+      return res.status(404).send({ error: "Can't find User!" });
+    }
+
+    next();
+  } catch (error) {
+    return res.status(404).send({ error: "Authentication Error" });
+  }
+}
+
 
 // @desc    Register new user
 // @route   POST /api/users/signup
 // @access  Public
-const signup = asyncHandler(async (req, res) => {
-    const {
-      username,
-      email,
-      password,
-      confirmPassword,
-      role,
-      location,
-      phone,
-      domain,
-    } = req.body;
-  
-    const profileImg = req.file ? req.file.filename : "/img/user.png";
-  
-    try {
-      if (!username || !email || !password || !confirmPassword || !role) {
-        return res.status(400).json({ message: 'Please add all fields.' });
+export async function signup(req, res) {
+  const {
+    firstname,
+    lastname,
+    username,
+    email,
+    password,
+    role,
+    location,
+    phone,
+    domain,
+    type,
+    skills,
+  } = req.body;
+
+  const profileImage = req.file ? req.file.filename : "/img/user.png";
+  const resume_file = req.file ? req.file.filename : ""; 
+  //const images = req.files ? req.files.map(file => file.filename) : ["/img/company"];
+  let uploadedImages = [];
+
+  if (req.files && req.files.length > 0) {
+    uploadedImages = req.files.map(file => `/uploads/images/multi/${file.filename}`);
+  } else {
+    // Assign a default image path if no images are uploaded
+    uploadedImages = ['/img/company.png']; // Update with your default path
+  }
+
+  try {
+    if (!username || !email || !password || !role) {
+      return res.status(400).json({ message: 'Please add all fields.' });
+    }
+      // Check if username already exists
+      const userExistByUsername = await User.findOne({ username });
+      if (userExistByUsername) {
+        return res.status(400).json({ message: 'Username already taken. Please choose another one.' });
       }
-  
-      if (!['jobSeeker', 'recruiter'].includes(role)) {
-        return res.status(400).json({ message: 'Invalid role specified.' });
-      }
-  
-      const userExist = await User.findOne({ email });
-      if (userExist) {
-        return res.status(400).json({ message: 'User already exists.' });
-      }
-  
-      if (password !== confirmPassword) {
-        return res.status(400).json({ message: `Passwords don't match.` });
-      }
-  
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-      const newUser = new User({
+
+    if (!['jobSeeker', 'recruiter'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role specified.' });
+    }
+
+    const userExist = await User.findOne({ email });
+    if (userExist) {
+      return res.status(400).json({ message: 'User already exists.' });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    // Génération de l'OTP
+    const otp = otpGenerator.generate(4, {lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
+    // Créez une instance en utilisant le schéma approprié en fonction du rôle
+    let newUser;
+    if (role === 'jobSeeker') {
+      newUser = new JobSeeker({
+        firstname,
+        lastname,
         username,
         email,
         password: hashedPassword,
@@ -51,259 +93,282 @@ const signup = asyncHandler(async (req, res) => {
         phone,
         domain,
         role,
-        profileImg,
+        image: profileImage,
+        type,
+        skills,
+        resume_file,
+        otp,
       });
-  
-      if (role === 'jobSeeker') {
-        const jobSeeker = new JobSeeker({
-          type: req.body.type,
-          skills: req.body.skills,
-          resume_file: req.file ? req.file.filename : '',
-        });
-        newUser.role = jobSeeker.role;
-        newUser.roleData = jobSeeker;
-      } else if (role === 'recruiter') {
-        const recruiter = new Recruiter({
-          type: req.body.type,
-          //workspace_images: req.body.workspace_images,
-          workspace_images: req.files ? req.files.map(file => file.filename) : ['/img/company.png'],
-        });
-        newUser.role = recruiter.role;
-        newUser.roleData = recruiter;
-      }
-  
-      const savedUser = await newUser.save();
-      const token = generateToken(savedUser._id);
-      const userId = savedUser._id;
-  
-      res.status(201).json({
-        message: 'User registered successfully.',
-        userId,
-        token,
+    } else if (role === 'recruiter') {
+      newUser = new Recruiter({
+        firstname,
+        lastname,
+        username,
+        email,
+        password: hashedPassword,
+        location,
+        phone,
+        domain,
+        role,
+        image:profileImage,
+        type,
+        images:uploadedImages,
+        otp,
       });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
     }
-  });
 
-// @desc    Authenticate user
-// @route   POST /api/users/signin
-// @access  Public
-const signin = asyncHandler(async (req, res) => {
-    const { email, password } = req.body;
-    try {
-      // check for user email
-      const user = await User.findOne({ email });
-  
-      if (user && (await bcrypt.compare(password, user.password))) {
-        // Generate token after successful login
-        const token = generateToken(user._id);
-  
-        // Send the response with token
-        res.json({
-          _id: user.id,
-          username: user.username,
-          email: user.email,
-          token,
-        });
-      } else {
-        res.status(400).json({ error: 'Invalid credentials' });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
+    const savedUser = await newUser.save();
+    const token = generateToken(savedUser._id);
+    const userId = savedUser._id;
+
+    res.status(200).json({
+      message: 'User registered successfully.',
+      userId,
+      token,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+  // @desc    Authenticate user
+  // @route   POST /api/users/signin
+  // @access  Public
+
+  export async function signin (req,res) {
+    const {email,password} =  req.body;
+    const user = await User.findOne({"email": email});
+    if(!user){
+        return res.status(403).json({error: "user not found"});
     }
-  });
-
+    const passwordCompare = await bcrypt.compare(password,user.password);
+    if(!passwordCompare){
+        return res.status(403).json({error : "password failed"})
+    }
+    const token = generateToken(user._id);
+    let oldTokens = user.tokens || [];
+    if(oldTokens.length){
+ oldTokens = oldTokens.filter(t =>{
+const timeDiff = (Date.now() - parseInt(t.signedAt)) / 1000
+if(timeDiff < 86400){
+  return t;
+}
+})
+    }
+    await User.findByIdAndUpdate(user._id,{tokens:[...oldTokens,{token,signedAt:Date.now().toString()}]})
+    res.status(200).json({success: true , token: token,role: user.role});
+}
 // @desc    Get user data
 // @route   Get /api/users/me
 // @access  Private
-const getMe = asyncHandler(async (req, res) => {
-    res.status(200).json(req.user)
-  });
-
+export async function getMe(req, res) {
+    try {
+        res.status(200).json(req.user)
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
   // @desc    Update user data
 // @route   PUT /api/users/editprofile
 // @access  Private
-  const editProfile = asyncHandler(async (req, res) => {
-    try {
-      const updateFields = { ...req.body };
-  
-      if (updateFields.password) {
-        const hashedPassword = await bcrypt.hash(updateFields.password, 10);
-        updateFields.password = hashedPassword;
-      }
-  
-      const user = await User.findByIdAndUpdate(req.user._id, updateFields, { new: true });
-  
-      return res.status(200).json({ message: "Profile updated successfully", user });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: "Server error" });
-    }
-  });
-  // @desc    Update user profile image
+export async function editProfile (req,res) {
+  try {
+    const password = req.body.password;
+    console.log('password',password);
+    const user =  await User.findByIdAndUpdate(req.user._id,req.body);
+    console.log('body',req.body);
+    const hash = await bcrypt.hash(password,10);
+    user.password = hash;
+    await user.save();
+    return res.status(200).json({message : "updated"});
+} catch(e){
+    res.status(500).json({Error:"Server error"});
+}
+}
+
+// @desc    Update user profile image
 // @route   PUT /api/users/editProfileImage
 // @access  Private
-const editProfileImage = asyncHandler(async (req, res) => {
-    try {
-      const { filename } = req.file;
-  
-      // Update the user's profile image
-      const user = await User.findByIdAndUpdate(
-        req.user._id,
-        { profileImg: filename },
-        { new: true }
-      );
-  
-      return res.status(200).json({
-        message: 'Profile image updated successfully',
-        profileImg: user.profileImg,
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
+
+export async function editProfileImage(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No image uploaded.' });
     }
-  });
+    deleteFile(req.user.image,"./uploads/images/single" );
+
+    const { originalname, filename } = req.file; // Extract original and saved names
+
+    // Update the user's profile image path
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { image: filename }, // Update with saved filename
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: 'Profile image updated successfully',
+      image: user.image,
+      originalName: originalname, // Include original name for reference
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+    }
+// @desc    Update jobSeeker resume_file
+// @route   PUT /api/users/editProfileResume
+// @access  Private
+export async function editProfileResume(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No resume uploaded.' });
+    }
+
+    // Delete the existing resume file
+    deleteFile(req.user.resume_file, "../uploads/files");
+
+    const { originalname, filename } = req.file; // Extract original and saved names
+
+    // Update the user's profile resume_file path
+    const user = await User.findByIdAndUpdate(
+      req.user._id,
+      { resume_file: originalname }, // Update with original filename
+      { new: true }
+    );
+
+    return res.status(200).json({
+      message: 'Resume updated successfully',
+      resume_file: user.resume_file,
+      originalName: originalname, // Include original name for reference
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 // @desc    forget password
 // @route   POST /api/users/forgetPassword
 // @access  Public
-
-  const forgetPassword = asyncHandler(async (req, res) => {
-    try {
-      const { email } = req.body; 
+    export async function forgetPassword(req, res) {
+      const { email } = req.body;
   
-      const userData = await User.findOne({ email: email });
-  
-      if (userData) {
-        const randomString = randomstring.generate();
-        const data = await User.updateOne({ email: email }, { $set: { token: randomString } });
-        sendResetPasswordMail(userData.username, email, randomString);
-        res.status(200).send({ success: true, msg: "Please check your email for reset password" });
-      } else {
-        res.status(200).send({ success: true, msg: "This email does not exist" });
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(400).send({ success: false, msg: error.message });
-    }
-  });
-  // @desc  reset password
-  // @route POST /api/users/resetPassword/:token
-  // @access Private
-  const resetPassword = asyncHandler(async (req, res) => {
-  try{
-    const token = req.query.token;
-    const tokenData = await User.findOne({token:token});
-    if(tokenData){
-        const {password, confirmPassword} = req.body;
-        if(password !== confirmPassword){
-            return res.status(400).send({success :false,msg:"Passwords don't match"});
-        }
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-        const userData = await User.findByIdAndUpdate({_id:tokenData._id},{$set:{password:hashedPassword,token:''}},{new:true});
-        res.status(200).send({success :true,msg:"Password reset successfully",data : userData});
-
-    }else{
-        res.status(200).send({success :true,msg:"Invalid token"});
-
-    }
-
-  }catch(error){
-    res.status(400).send({success :false,msg:error.message});
+      // Rechercher l'utilisateur par son adresse e-mail
+      User.findOne({ "email": email })
+          .then(user => {
+              if (user == null) {
+                  res.status(404).json({ error: "Non trouvé" });
+                  return;
+              }
+              // Générer un OTP (One-Time Password) pour la réinitialisation du mot de passe
+              user.otp = otpGenerator.generate(4, { upperCaseAlphabets: false, specialChars: false, digits: true, lowerCaseAlphabets: false });
+              // Envoyer un e-mail contenant l'OTP pour la réinitialisation du mot de passe
+              resetMail(user);
+              user.save();
+              res.status(200).json({ _id: user._id });
+          })
+          .catch(e => {
+              res.status(500).json({ error: "Erreur serveur" });
+          });
   }
-  });
-  // @desc    Change user password
-// @route   PUT /api/users/changePassword
-// @access  Private
-const changePassword = asyncHandler(async (req, res) => {
-    try {
-      const { currentPassword, newPassword, confirmPassword } = req.body;
-      
-      // Check if newPassword and confirmPassword match
-      if (newPassword !== confirmPassword) {
-        return res.status(400).json({ success: false, msg: "New passwords don't match" });
-      }
-  
-      // Find the user by ID
-      const user = await User.findById(req.user._id);
-  
-      // Check if the current password is correct
-      if (!(await bcrypt.compare(currentPassword, user.password))) {
-        return res.status(400).json({ success: false, msg: 'Invalid current password' });
-      }
-  
-      // Hash the new password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
-  
-      // Update the user's password
-      user.password = hashedPassword;
-      await user.save();
-  
-      res.status(200).json({ success: true, msg: 'Password changed successfully' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ success: false, msg: 'Internal server error' });
+ // @desc  reset password
+  // @route POST /api/users/resetPassword
+  // @access Private
+  export async function resetPassword(req,res){
+    try{const {id,otp}=req.body
+    const user= await User.findById(id)
+    if(otp===user.otp){
+      const token = generateToken(user.id);
+        res.status(200).json({success: true , data: token});
     }
-  });
-
-
-const sendResetPasswordMail = asyncHandler( async (username,email, token) => {
-try{
-  const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    secure: false,
-    requireTLS:true,
-    auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
+    else{
+        res.status(403).json({error:"Wrong code"})
     }
- });
- const mailOptions ={
-        from: process.env.EMAIL_USER,
-        to: email,
-        subject: 'Reset Password',
-        html:'<h1>Reset Password</h1><p> Hi '+username+'Click <a href="http://127.0.0.1:3000/resetPassword?token='+token+'">here</a> to reset your password</p>' 
+}    
+    catch(e){
+        res.status(500).json({error:e})
     }
-    transporter.sendMail(mailOptions, function(error, info){
-        if (error) {
-          console.log(error);
-        } else {
-          console.log('Email sent: ' + info.response);
-        }
-      });
-}catch(error){
-    res.status(400).send({success :false,msg:error.message});
 }
+      // @desc    Change user password
+    // @route   PUT /api/users/changePassword
+    // @access  Private
 
-});
+export async function changePassword(req, res) {
+    try {
+      const {password,newpassword} =  req.body;
+      const user = await User.findOne(req.user._id)
+      const passwordCompare = await bcrypt.compare(password,user.password);
+      if(!passwordCompare){
+          return res.status(403).json({error : "password failed"})
+      }
+  
+      const hash = await bcrypt.hash(newpassword,10);
+      user.password = hash;
+      await user.save();
 
-const loadAuth = (req,res)=>{
+        res.status(200).json({ success: true, msg: 'Password changed successfully' });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, msg: 'Internal server error' });
+      }
+    }  
+   
+export async function loadAuth(req, res) {
     res.render('auth')
 }
-const successGoogleLogin = (req,res)=>{
+
+export async function successGoogleLogin(req, res) {
     if(!req.user)
     res.redirect('/failure');
 console.log(req.user);
 res.send("welcome"+req.user.email);
 }
-const failureGoogleLogin = (req,res)=>{
+export async function failureGoogleLogin(req, res) {
     res.send("Error");
 }
-module.exports = {
-signup,
-signin,
-getMe,
-editProfile,
-forgetPassword,
-resetPassword,
-changePassword, 
-editProfileImage,
-loadAuth,
-successGoogleLogin,
-failureGoogleLogin,
+
+function deleteFile(fileName,path) {
+  try {
+      //const filePath = path.join(path.dirname(new URL(import.meta.url).pathname),path, fileName);
+  if (fs.existsSync(`${path}/${fileName}`)) {
+    fs.unlinkSync(`${path}/${fileName}`);
+    console.log(`File '${fileName}' deleted successfully.`);
+  } else {
+    console.log(`File '${fileName}' not found.`);
+  }
+  } catch (error) {
+      throw error;
+  }
+  
 }
+// @desc    Logout user
+// @route   GET /api/users/signOut
+// @access  Private
+export async function signOut(req, res) {
+  try {
+    // Check if authorization header exists
+    if (req.headers && req.headers.authorization) {
+      const token = req.headers.authorization.split(' ')[1];
+      
+      if (!token) {
+        return res.status(401).json({ success: false, message: "Authorization fail!" });
+      }
+      
+      // Filter out the logged-out token
+      const tokens = req.user.tokens;
+      const newTokens = tokens.filter(t => t.token !== token);
+      
+      // Update user's tokens in the database
+      await User.findByIdAndUpdate(req.user._id, { tokens: newTokens });
+
+      return res.json({ success: true, message: "Logged out" });
+    } else {
+      return res.status(401).json({ success: false, message: "Authorization header missing" });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: "Internal server error" });
+  }
+}
+

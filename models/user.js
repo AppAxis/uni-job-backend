@@ -1,26 +1,34 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
+import mongoose from 'mongoose';
+import validator from 'validator';
+
 const { Schema, model } = mongoose;
 
 const userSchema = new Schema(
   {
-    username: {
+    firstName: {
       type: String,
-      required: [true, 'The name is required!'],
-      trim: true,
-      minlength: 3,
-      maxlength: 20,
       validate: {
         validator: (val) => /^[a-zA-Z0-9]+$/.test(val),
-        message: 'Username must only contain letters and numbers',
+        message: 'First name must only contain letters and numbers',
       },
     },
+    lastName: {
+      type: String,
+      validate: {
+        validator: (val) => /^[a-zA-Z0-9]+$/.test(val),
+        message: 'Last name must only contain letters and numbers',
+      },
+    },
+    username : {
+      type: String,
+      unique: [true, "Username Exist"]
+  },
     email: {
       type: String,
-      required: [true, "Email field required!"],
+      required: [true, 'Email field required!'],
       validate: {
         validator: validator.isEmail,
-        message: "Please provide a valid email",
+        message: 'Please provide a valid email',
       },
       unique: true,
     },
@@ -37,7 +45,7 @@ const userSchema = new Schema(
       minlength: 8,
       maxlength: 8,
     },
-    profileImg: {
+    image: {
       type: String,
     },
     domain: {
@@ -52,10 +60,13 @@ const userSchema = new Schema(
       type: Number,
       required: false,
     },
-    token: {
+    otp: {
       type: String,
-      default: '', 
+      required: false,
     },
+    tokens:[{
+      type: Object
+    }]
   },
   {
     timestamps: true,
@@ -76,7 +87,7 @@ const jobSeekerSchema = new Schema(
       type: String,
     },
   },
-  { discriminatorKey: 'role' } 
+  { discriminatorKey: 'role' }
 );
 
 // Discriminator for Recruiter
@@ -86,11 +97,11 @@ const recruiterSchema = new Schema(
       type: String,
       enum: ['company', 'individual', 'recruitment_agency', 'headhunter'],
     },
-    workspace_images: {
-      type:[ String],
+    images: {
+      type: [String],
     },
   },
-  { discriminatorKey: 'role' } 
+  { discriminatorKey: 'role' }
 );
 
 // Define the User model using the base schema
@@ -102,4 +113,4 @@ const JobSeeker = User.discriminator('JobSeeker', jobSeekerSchema);
 // Define the Recruiter model using the Recruiter schema as a discriminator
 const Recruiter = User.discriminator('Recruiter', recruiterSchema);
 
-module.exports = { User, JobSeeker, Recruiter };
+export { User, JobSeeker, Recruiter };
