@@ -40,10 +40,10 @@ mongoose
 
 // middleware global
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(cors());
 app.use(morgan('dev'));
 app.use(errorHandler);
-app.use(express.urlencoded({ extended: true }));
 app.use('/img', express.static('uploads/images'));
 app.use('/file', express.static('uploads/files'));
 

@@ -8,7 +8,7 @@ import fs from "fs"
 
 
 
-/** middleware for verify user */
+/** verify user */
 export async function verifyUser(req, res, next) {
   try {
     const { email } = req.method === "GET" ? req.query : req.body;
@@ -26,14 +26,13 @@ export async function verifyUser(req, res, next) {
   }
 }
 
-
 // @desc    Register new user
 // @route   POST /api/users/signup
 // @access  Public
 export async function signup(req, res) {
   const {
-    firstname,
-    lastname,
+    firstName,
+    lastName,
     username,
     email,
     password,
@@ -44,28 +43,32 @@ export async function signup(req, res) {
     type,
     skills,
   } = req.body;
-
-  const profileImage = req.file ? req.file.filename : "/img/user.png";
-  const resume_file = req.file ? req.file.filename : ""; 
-  //const images = req.files ? req.files.map(file => file.filename) : ["/img/company"];
-  let uploadedImages = [];
-
-  if (req.files && req.files.length > 0) {
-    uploadedImages = req.files.map(file => `/uploads/images/multi/${file.filename}`);
+ 
+  //let resume_file = "";
+  let profileImage;
+  if (req.files && req.files['image'] && req.files['image'].length > 0) {
+    profileImage = `/uploads/images/${req.files['image'][0].filename}`;
   } else {
-    // Assign a default image path if no images are uploaded
-    uploadedImages = ['/img/company.png']; // Update with your default path
+    profileImage = "/img/user.png"; 
+  }
+
+  let uploadedImages = [];
+  if (req.files && req.files['images'] && req.files['images'].length > 0) {
+    uploadedImages = req.files['images'].map(file => `/uploads/images/${file.filename}`);
+  } else {
+    uploadedImages = ['/img/company.png'];
   }
 
   try {
     if (!username || !email || !password || !role) {
       return res.status(400).json({ message: 'Please add all fields.' });
     }
-      // Check if username already exists
-      const userExistByUsername = await User.findOne({ username });
-      if (userExistByUsername) {
-        return res.status(400).json({ message: 'Username already taken. Please choose another one.' });
-      }
+    
+    // Check if username already exists
+    const userExistByUsername = await User.findOne({ username });
+    if (userExistByUsername) {
+      return res.status(400).json({ message: 'Username already taken. Please choose another one.' });
+    }
 
     if (!['jobSeeker', 'recruiter'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role specified.' });
@@ -80,12 +83,13 @@ export async function signup(req, res) {
     const hashedPassword = await bcrypt.hash(password, salt);
     // Génération de l'OTP
     const otp = otpGenerator.generate(4, {lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
-    // Créez une instance en utilisant le schéma approprié en fonction du rôle
+    
+    // Create a user instance with the necessary fields
     let newUser;
     if (role === 'jobSeeker') {
       newUser = new JobSeeker({
-        firstname,
-        lastname,
+        firstName,
+        lastName,
         username,
         email,
         password: hashedPassword,
@@ -96,13 +100,13 @@ export async function signup(req, res) {
         image: profileImage,
         type,
         skills,
-        resume_file,
+       // resume_file : resume_file,
         otp,
       });
     } else if (role === 'recruiter') {
       newUser = new Recruiter({
-        firstname,
-        lastname,
+        firstName,
+        lastName,
         username,
         email,
         password: hashedPassword,
@@ -118,7 +122,7 @@ export async function signup(req, res) {
     }
 
     const savedUser = await newUser.save();
-    const token = generateToken(savedUser._id);
+    const token = generateToken(savedUser._id, savedUser.role);
     const userId = savedUser._id;
 
     res.status(200).json({
@@ -145,7 +149,7 @@ export async function signup(req, res) {
     if(!passwordCompare){
         return res.status(403).json({error : "password failed"})
     }
-    const token = generateToken(user._id);
+    const token = generateToken(user._id, user.role);
     let oldTokens = user.tokens || [];
     if(oldTokens.length){
  oldTokens = oldTokens.filter(t =>{
@@ -172,6 +176,7 @@ export async function getMe(req, res) {
   // @desc    Update user data
 // @route   PUT /api/users/editprofile
 // @access  Private
+
 export async function editProfile (req,res) {
   try {
     const password = req.body.password;
@@ -181,7 +186,7 @@ export async function editProfile (req,res) {
     const hash = await bcrypt.hash(password,10);
     user.password = hash;
     await user.save();
-    return res.status(200).json({message : "updated"});
+    return res.status(200).json({message : " Profile updated with success",data : user });
 } catch(e){
     res.status(500).json({Error:"Server error"});
 }
@@ -198,12 +203,12 @@ export async function editProfileImage(req, res) {
     }
     deleteFile(req.user.image,"./uploads/images/single" );
 
-    const { originalname, filename } = req.file; // Extract original and saved names
+    const { originalname, filename } = req.file; 
 
     // Update the user's profile image path
     const user = await User.findByIdAndUpdate(
       req.user._id,
-      { image: filename }, // Update with saved filename
+      { image: filename }, 
       { new: true }
     );
 
@@ -217,31 +222,70 @@ export async function editProfileImage(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
     }
+//@desc    Upload jobSeeker resume_file
+//@route   POST /api/users/uploadResumeFile
+//@access  Private
+    export async function uploadResumeFile(req, res) {
+      try {
+          const user = await User.findById(req.user._id);
+  
+          if (!user) {
+              return res.status(404).json({ error: 'User not found' });
+          }
+  
+          if (user.role !== 'jobSeeker') {
+              return res.status(403).json({ error: "not authorized" });
+          }
+  
+          const file = await req.file.filename;
+          user.resume_file = `/uploads/files/${file}`;
+          await user.save();
+  
+          res.status(200).json({ message: "resume file added" });
+  
+      } catch (e) {
+          console.error(e);
+          res.status(500).json({ error: 'server error' });
+      }
+  }
+
 // @desc    Update jobSeeker resume_file
 // @route   PUT /api/users/editProfileResume
 // @access  Private
-export async function editProfileResume(req, res) {
+export async function editResume(req, res) {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No resume uploaded.' });
     }
 
-    // Delete the existing resume file
-    deleteFile(req.user.resume_file, "../uploads/files");
+    const user = await User.findById(req.user._id);
 
-    const { originalname, filename } = req.file; // Extract original and saved names
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
 
-    // Update the user's profile resume_file path
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { resume_file: originalname }, // Update with original filename
-      { new: true }
-    );
+    if (user.role !== 'jobSeeker') {
+      return res.status(403).json({ error: 'Not authorized.' });
+    }
+
+    // Delete the old resume file
+    deleteFile(user.resume_file, "./uploads/files");
+
+    const { originalname, filename } = req.file;
+
+    // Build the full path of the new resume file
+    const newResumeFilePath = `/uploads/files/${filename}`;
+
+    // Update the resume_file field in the user document
+    user.resume_file = newResumeFilePath;
+
+    // Save the updated user document
+    await user.save();
 
     return res.status(200).json({
       message: 'Resume updated successfully',
-      resume_file: user.resume_file,
-      originalName: originalname, // Include original name for reference
+      resume_file: newResumeFilePath,
+      originalName: originalname,
     });
   } catch (error) {
     console.error(error);
@@ -279,7 +323,7 @@ export async function editProfileResume(req, res) {
     try{const {id,otp}=req.body
     const user= await User.findById(id)
     if(otp===user.otp){
-      const token = generateToken(user.id);
+      const token = generateToken(user._id, user.role);
         res.status(200).json({success: true , data: token});
     }
     else{
@@ -371,4 +415,7 @@ export async function signOut(req, res) {
     res.status(500).json({ success: false, message: "Internal server error" });
   }
 }
+
+
+
 

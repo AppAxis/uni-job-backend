@@ -7,21 +7,23 @@ const userSchema = new Schema(
   {
     firstName: {
       type: String,
-      validate: {
+     /* validate: {
         validator: (val) => /^[a-zA-Z0-9]+$/.test(val),
         message: 'First name must only contain letters and numbers',
-      },
+      },*/
     },
     lastName: {
       type: String,
-      validate: {
-        validator: (val) => /^[a-zA-Z0-9]+$/.test(val),
-        message: 'Last name must only contain letters and numbers',
-      },
+   
     },
     username : {
+      required :true,
       type: String,
-      unique: [true, "Username Exist"]
+      unique: [true, "Username Exist"],
+      /*validate: {
+        validator: (val) => /^[a-zA-Z0-9]+$/.test(val),
+        message: 'username must only contain letters and numbers',
+      },*/
   },
     email: {
       type: String,

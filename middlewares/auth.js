@@ -25,12 +25,16 @@ export async function protect(req, res, next) {
     res.status(401).send({ success: false, message: 'Not authorized' });
   }
 }
-export function validatorRole(allowedRoles) {
-  return async function (req, res, next) {
-    if (!req.user || !allowedRoles.includes(req.user.role)) {
-      return res.status(403).json({ success: false, message: "Unauthorized" });
-    }
-    next();
-  };
+
+export function isRecruiter (req,res,next) {
+  try {
+      if(req.user.role !== "recruiter") {
+          return res.status(302).json({ success: false, message: "Not authorized,you're not recruiter"});
+      } 
+     next();
+  }
+   catch (error) {
+      res.status(302).json({success: false, message: error});
+  }
 }
 

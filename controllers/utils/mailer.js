@@ -16,7 +16,7 @@ export async function  resetMail(user){
               from: process.env.EMAIL_USER,
               to: user.email,
               subject: 'Forget password',
-              text: `Dear ${user.firstname} ${user.lastname},\n\nYour One-Time Password (OTP) for password reset is: <strong>${user.otp}</strong>.\n\nPlease use this code to complete the password reset process. If you didn't request this change, please ignore this email.\n\nBest regards,\nThe UniJob Team`,
+              text: `Dear ${user.firstName} ${user.lastName},\n\nYour One-Time Password (OTP) for password reset is: <strong>${user.otp}</strong>.\n\nPlease use this code to complete the password reset process. If you didn't request this change, please ignore this email.\n\nBest regards,\nThe UniJob Team`,
               
              
           }
