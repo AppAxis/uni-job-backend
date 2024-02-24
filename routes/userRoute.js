@@ -54,7 +54,6 @@ router.route('/resetPassword').post(resetPassword);
 router.post('/signOut',protect,signOut);
 router.route('/uploadResumeFile').post(protect,uploadFile.single('resume_file'), uploadResumeFile);
 
-
 // PUT Methods
 router.route('/editprofile').put(protect, editProfile);
 router.route('/changePassword').put(protect, changePassword);

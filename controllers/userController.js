@@ -1,11 +1,11 @@
 import bcrypt from 'bcryptjs';
+import { uploadCombinedImages } from '../middlewares/imageStorage.js';
 import { User,JobSeeker,Recruiter} from '../models/user.js';
 import generateToken from './utils/generateToken.js';
 import otpGenerator from 'otp-generator';
 import { resetMail } from "./utils/mailer.js";
 import path from "path"
 import fs from "fs"
-
 
 
 /** verify user */
@@ -47,7 +47,7 @@ export async function signup(req, res) {
   //let resume_file = "";
   let profileImage;
   if (req.files && req.files['image'] && req.files['image'].length > 0) {
-    profileImage = `/uploads/images/${req.files['image'][0].filename}`;
+    profileImage = `/uploads/images/${req.files['image'].filename}`;
   } else {
     profileImage = "/img/user.png"; 
   }
@@ -177,51 +177,59 @@ export async function getMe(req, res) {
 // @route   PUT /api/users/editprofile
 // @access  Private
 
-export async function editProfile (req,res) {
+export async function editProfile(req, res) {
   try {
-    const password = req.body.password;
-    console.log('password',password);
-    const user =  await User.findByIdAndUpdate(req.user._id,req.body);
-    console.log('body',req.body);
-    const hash = await bcrypt.hash(password,10);
-    user.password = hash;
+    const { firstName, lastName, email, location, phone, domain, type, skills, password,username} = req.body;
+    console.log(req.body);
+    const user = await User.findById(req.user._id);
+    console.log(user);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    user.firstName = firstName;
+    user.lastName = lastName;
+    user.email = email;
+    user.location = location;
+    user.phone = phone;
+    user.domain = domain;
+    user.type = type;
+    user.skills = skills;
+    user.username = username;
+    if (password) {
+      const hash = await bcrypt.hash(password, 10);
+      user.password = hash;
+    }
     await user.save();
-    return res.status(200).json({message : " Profile updated with success",data : user });
-} catch(e){
-    res.status(500).json({Error:"Server error"});
-}
+
+    return res.status(200).json({ message: "Profile updated successfully", data: user });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ Error: "Server error" });
+  }
 }
 
 // @desc    Update user profile image
 // @route   PUT /api/users/editProfileImage
 // @access  Private
-
 export async function editProfileImage(req, res) {
   try {
-    if (!req.file) {
-      return res.status(400).json({ error: 'No image uploaded.' });
-    }
-    deleteFile(req.user.image,"./uploads/images/single" );
+    const user = await User.findById(req.user._id);
+   const oldImageFileName = user.image.split('/').pop();
+   await deleteFile(oldImageFileName, './uploads/images');
 
-    const { originalname, filename } = req.file; 
+   // Update the user's image path
+   const newImageFileName = req.files && req.files['image'] && req.files['image'].length > 0
+     ? req.files['image'][0].filename
+     : oldImageFileName;
 
-    // Update the user's profile image path
-    const user = await User.findByIdAndUpdate(
-      req.user._id,
-      { image: filename }, 
-      { new: true }
-    );
-
-    return res.status(200).json({
-      message: 'Profile image updated successfully',
-      image: user.image,
-      originalName: originalname, // Include original name for reference
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Internal server error' });
+   user.image = `/uploads/images/${newImageFileName}`;
+   await user.save();
+    res.status(200).json({ message: "Profile image changed" });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ Error: "Server error" });
   }
-    }
+}
 //@desc    Upload jobSeeker resume_file
 //@route   POST /api/users/uploadResumeFile
 //@access  Private
