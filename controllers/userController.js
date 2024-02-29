@@ -230,6 +230,39 @@ export async function editProfileImage(req, res) {
     res.status(500).json({ Error: "Server error" });
   }
 }
+// @desc    Update recruiter images
+// @route   PUT /api/users/editRecruiterImages
+// @access  Private
+/*export async function editRecruiterImages(req, res) {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    // Delete old images
+   user.images.forEach(async (images) => {
+      const oldImageFileName = images.split('/').pop();
+      await deleteFile(oldImageFileName, './uploads/images');
+    });
+
+    // Update images array with new image filenames
+    const newImageFileNames = req.files && req.files['images']
+      ? req.files['images'].map(file => `/uploads/images/${file.filename}`)
+      : user.images;
+
+    user.images = newImageFileNames;
+
+    // Save the updated recruiter document
+    await user.save();
+
+    res.status(200).json({ message: 'Recruiter images updated successfully' });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ Error: 'Server error' });
+  }
+}*/
 //@desc    Upload jobSeeker resume_file
 //@route   POST /api/users/uploadResumeFile
 //@access  Private
