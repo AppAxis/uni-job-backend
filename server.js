@@ -3,8 +3,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
-import userRoutes from './routes/userRoute.js';
-import { errorHandler } from './middlewares/errors.js';
+import userRoutes from './routes/user.routes.js';
+import { errorHandler } from './middlewares/errors.middleware.js';
 import passport from 'passport';
 import session from 'express-session';
 
@@ -30,9 +30,9 @@ mongoose.set('debug', true);
 mongoose.Promise = global.Promise;
 
 mongoose
-  .connect(`mongodb://127.0.0.1:27017/${databaseName}`,)
+  .connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => {
-    console.log(`Connected to ${databaseName}`);
+    console.log(`Connected to MongoDB`);
   })
   .catch((err) => {
     console.log(err);
@@ -41,7 +41,7 @@ mongoose
 // middleware global
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
+app.use(cors({ origin: '*' }));
 app.use(morgan('dev'));
 app.use(errorHandler);
 app.use('/img', express.static('uploads/images'));

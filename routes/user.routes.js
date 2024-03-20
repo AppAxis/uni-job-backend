@@ -1,8 +1,8 @@
 
 import { Router } from 'express';
-import {uploadCombinedImages}  from '../middlewares/imageStorage.js';
-import uploadFile from '../middlewares/fileStorage.js'; 
-import { protect} from '../middlewares/auth.js';
+import {uploadCombinedImages}  from '../middlewares/image-storage.js';
+import uploadFile from '../middlewares/file-storage.js'; 
+import { protect} from '../middlewares/auth.middleware.js';
 import {
   signup,
   signin,
@@ -10,6 +10,7 @@ import {
   editProfile,
   forgetPassword,
   resetPassword,
+  updatePassword,
   changePassword,
   editProfileImage,
   loadAuth,
@@ -19,7 +20,7 @@ import {
   editResume,
   signOut,
 
-} from '../controllers/userController.js';
+} from '../controllers/user.controller.js';
 
 import passport from 'passport';
 import '../controllers/utils/googleAuth.js';
@@ -28,25 +29,8 @@ router.use(passport.initialize());
 router.use(passport.session());
 
 
-// choosing the right upload middleware based on the role of user
-const chooseUploadMiddleware = (req, res, next) => {
-  const { role } = req.user || req.body;
-  console.log(role);
-  if (role === 'jobSeeker') {
-    return uploadSingleImage(req, res, next);
-  } else if (role === 'recruiter') {
-    return uploadMultiImage(req, res, next);
-  } else {
-
-    return next();
-  }
-};
-
-
 // Post methods
-//router.route('/signup').post(chooseUploadMiddleware, signup);
-//router.route('/signup').post(uploadMultiImage, signup);
-//router.route('/signup').post(uploadFile.single('resume_file'), signup);
+
 router.route('/signup').post(uploadCombinedImages, signup);
 router.route('/signin').post(signin);
 router.route('/forgotPassword').post(forgetPassword);
@@ -59,6 +43,7 @@ router.route('/editprofile').put(protect, editProfile);
 router.route('/changePassword').put(protect, changePassword);
 router.route('/editProfileImage').put(protect,uploadCombinedImages, editProfileImage);
 router.route('/editResume').put(protect,uploadFile.single('resume_file'), editResume);
+router.route('/updatePassword').put(protect, updatePassword);
 
 // GET Methods
 router.route('/me') .get(protect, getMe);

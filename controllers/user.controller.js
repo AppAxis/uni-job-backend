@@ -1,10 +1,8 @@
 import bcrypt from 'bcryptjs';
-import { uploadCombinedImages } from '../middlewares/imageStorage.js';
 import { User,JobSeeker,Recruiter} from '../models/user.js';
 import generateToken from './utils/generateToken.js';
 import otpGenerator from 'otp-generator';
 import { resetMail } from "./utils/mailer.js";
-import path from "path"
 import fs from "fs"
 
 
@@ -33,7 +31,6 @@ export async function signup(req, res) {
   const {
     firstName,
     lastName,
-    username,
     email,
     password,
     role,
@@ -42,32 +39,27 @@ export async function signup(req, res) {
     domain,
     type,
     skills,
+    companyName,
+    bio,
   } = req.body;
- 
-  //let resume_file = "";
-  let profileImage;
+
+  let image;
   if (req.files && req.files['image'] && req.files['image'].length > 0) {
-    profileImage = `/uploads/images/${req.files['image'].filename}`;
+    image = `/uploads/images/${req.files['image'][0].filename}`;
   } else {
-    profileImage = "/img/user.png"; 
+    image = "/uploads/images/user.png"; 
   }
 
   let uploadedImages = [];
   if (req.files && req.files['images'] && req.files['images'].length > 0) {
     uploadedImages = req.files['images'].map(file => `/uploads/images/${file.filename}`);
   } else {
-    uploadedImages = ['/img/company.png'];
+    uploadedImages = ['/uploads/images/company.png'];
   }
 
   try {
-    if (!username || !email || !password || !role) {
+    if (!email || !password || !role) {
       return res.status(400).json({ message: 'Please add all fields.' });
-    }
-    
-    // Check if username already exists
-    const userExistByUsername = await User.findOne({ username });
-    if (userExistByUsername) {
-      return res.status(400).json({ message: 'Username already taken. Please choose another one.' });
     }
 
     if (!['jobSeeker', 'recruiter'].includes(role)) {
@@ -82,7 +74,7 @@ export async function signup(req, res) {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     // Génération de l'OTP
-    const otp = otpGenerator.generate(4, {lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
+    const otp = otpGenerator.generate(4, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
     
     // Create a user instance with the necessary fields
     let newUser;
@@ -90,33 +82,36 @@ export async function signup(req, res) {
       newUser = new JobSeeker({
         firstName,
         lastName,
-        username,
         email,
         password: hashedPassword,
         location,
         phone,
         domain,
         role,
-        image: profileImage,
+        image: image,
         type,
         skills,
-       // resume_file : resume_file,
         otp,
       });
     } else if (role === 'recruiter') {
+      let recruiterCompanyName;
+      if (type === 'company'|| type === 'recruitment_agency') {
+        recruiterCompanyName = companyName;
+      } else if (type === 'individual' || type === 'headhunter') {
+        recruiterCompanyName = `${firstName} ${lastName}`;
+      }
       newUser = new Recruiter({
-        firstName,
-        lastName,
-        username,
         email,
         password: hashedPassword,
         location,
         phone,
         domain,
         role,
-        image:profileImage,
+        image:image,
         type,
-        images:uploadedImages,
+        companyName: recruiterCompanyName || `${firstName} ${lastName}`,
+        bio,
+        images: uploadedImages,
         otp,
       });
     }
@@ -135,6 +130,7 @@ export async function signup(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
   // @desc    Authenticate user
   // @route   POST /api/users/signin
   // @access  Public
@@ -179,7 +175,7 @@ export async function getMe(req, res) {
 
 export async function editProfile(req, res) {
   try {
-    const { firstName, lastName, email, location, phone, domain, type, skills, password,username} = req.body;
+    const { firstName, lastName, email, location, phone, domain, type, skills, password, companyName,bio} = req.body;
     console.log(req.body);
     const user = await User.findById(req.user._id);
     console.log(user);
@@ -194,7 +190,8 @@ export async function editProfile(req, res) {
     user.domain = domain;
     user.type = type;
     user.skills = skills;
-    user.username = username;
+    user.companyName = companyName;
+    user.bio = bio;
     if (password) {
       const hash = await bcrypt.hash(password, 10);
       user.password = hash;
@@ -263,6 +260,7 @@ export async function editProfileImage(req, res) {
     res.status(500).json({ Error: 'Server error' });
   }
 }*/
+
 //@desc    Upload jobSeeker resume_file
 //@route   POST /api/users/uploadResumeFile
 //@access  Private
@@ -372,8 +370,37 @@ export async function editResume(req, res) {
     }
 }    
     catch(e){
-        res.status(500).json({error:e})
+      res.status(500).json({ error: e.message || 'Internal Server Error' });
     }
+}
+// @desc    Update user password after OTP verification
+// @route   PUT /api/users/updatePassword
+// @access  Private
+export async function updatePassword(req, res) {
+  try {
+    const {newPassword, confirmPassword } = req.body;
+
+    const user = await User.findOne(req.user._id)
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found.' });
+    }
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match.' });
+    }
+
+    // Update the user's password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    user.password = hashedPassword;
+
+    await user.save();
+
+    res.status(200).json({ message: 'Password updated successfully.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
 }
       // @desc    Change user password
     // @route   PUT /api/users/changePassword
@@ -415,7 +442,6 @@ export async function failureGoogleLogin(req, res) {
 
 function deleteFile(fileName,path) {
   try {
-      //const filePath = path.join(path.dirname(new URL(import.meta.url).pathname),path, fileName);
   if (fs.existsSync(`${path}/${fileName}`)) {
     fs.unlinkSync(`${path}/${fileName}`);
     console.log(`File '${fileName}' deleted successfully.`);
@@ -435,25 +461,25 @@ export async function signOut(req, res) {
     // Check if authorization header exists
     if (req.headers && req.headers.authorization) {
       const token = req.headers.authorization.split(' ')[1];
-      
+
       if (!token) {
-        return res.status(401).json({ success: false, message: "Authorization fail!" });
+        return res.status(401).json({ success: false, message: 'Authorization fail!' });
       }
-      
-      // Filter out the logged-out token
+
+      // Remove the logged-out token
       const tokens = req.user.tokens;
-      const newTokens = tokens.filter(t => t.token !== token);
-      
+      const newTokens = tokens.filter((t) => t.token !== token);
+
       // Update user's tokens in the database
       await User.findByIdAndUpdate(req.user._id, { tokens: newTokens });
 
-      return res.json({ success: true, message: "Logged out" });
+      return res.json({ success: true, message: 'Logged out' });
     } else {
-      return res.status(401).json({ success: false, message: "Authorization header missing" });
+      return res.status(401).json({ success: false, message: 'Authorization header missing' });
     }
   } catch (error) {
     console.error(error);
-    res.status(500).json({ success: false, message: "Internal server error" });
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 }
 

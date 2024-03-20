@@ -46,7 +46,7 @@ const jobOfferSchema = new Schema({
   },
   type: {
     type: String,
-    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote', 'alternation'],
+    enum: ['CDD', 'CDI', 'freelance', 'parttime', 'fulltime', 'remote', 'alternation']
   },
   job_responsibilities: {
     type: [String],
