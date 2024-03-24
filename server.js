@@ -4,6 +4,7 @@ import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
 import userRoutes from './routes/user.routes.js';
+import jobOfferRoutes from './routes/job-offer.routes.js';
 import { errorHandler } from './middlewares/errors.middleware.js';
 import passport from 'passport';
 import session from 'express-session';
@@ -50,6 +51,8 @@ app.use('/file', express.static('uploads/files'));
 app.set('view engine','ejs'); // set the view engine to ejs
 //api routes
 app.use('/api/users', userRoutes);
+app.use('/api/job-offers', jobOfferRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('welcome to UniJob');

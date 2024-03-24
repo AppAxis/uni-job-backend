@@ -2,16 +2,18 @@
 import { Router } from 'express';
 import {uploadCombinedImages}  from '../middlewares/image-storage.js';
 import uploadFile from '../middlewares/file-storage.js'; 
-import { protect} from '../middlewares/auth.middleware.js';
+import { protect,isRecruiter} from '../middlewares/auth.middleware.js';
 import {
   signup,
   signin,
   getMe,
+  getUserById,
   editProfile,
   forgetPassword,
   resetPassword,
   updatePassword,
   changePassword,
+  getAllJobSeekers,
   editProfileImage,
   loadAuth,
   successGoogleLogin,
@@ -47,6 +49,8 @@ router.route('/updatePassword').put(protect, updatePassword);
 
 // GET Methods
 router.route('/me') .get(protect, getMe);
+router.route('/getUserById/:id').get(protect,getUserById);
+router.route('/getAllJobSeekers').get(protect,isRecruiter,getAllJobSeekers);
 router.route('/auth').get(loadAuth);
 router.route('/auth/google')
     .get(passport.authenticate('google', { scope: ['profile', 'email'] }));

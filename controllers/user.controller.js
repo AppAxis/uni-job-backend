@@ -169,6 +169,26 @@ export async function getMe(req, res) {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+// @desc    Get user data by ID
+// @route   GET /api/users/:userId
+// @access  Private
+export async function getUserById(req, res) {
+  try {
+    // Query the User model to find a user by its ID
+    const user = await User.findById(req.params.id).exec();
+
+    // If the query is successful, send the user data as a response with a 200 status code
+    if (user) {
+      res.status(200).json(user);
+    } else {
+      // If the user is not found, send a 404 status code with an error message
+      res.status(404).json({ message: 'User not found' });
+    }
+  } catch (error) {
+    // If there's an error, send an error message with an appropriate status code
+    res.status(500).json({ message: 'Error retrieving user', error });
+  }
+}
   // @desc    Update user data
 // @route   PUT /api/users/editprofile
 // @access  Private
@@ -197,8 +217,8 @@ export async function editProfile(req, res) {
       user.password = hash;
     }
     await user.save();
-
-    return res.status(200).json({ message: "Profile updated successfully", data: user });
+    const token = generateToken(user._id, user.role);
+    return res.status(200).json({ message: "Profile updated successfully", data: user,token });
   } catch (e) {
     console.error(e);
     res.status(500).json({ Error: "Server error" });
@@ -400,6 +420,26 @@ export async function updatePassword(req, res) {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error.' });
+  }
+}
+// @desc    Get all job seekers
+// @route   GET /api/users/jobSeekers
+// @access  Private 
+export async function getAllJobSeekers(req, res) {
+  try {
+    // Find all job seekers using the JobSeeker model
+    const jobSeekers = await JobSeeker.find();
+
+    // Check if any job seekers were found
+    if (!jobSeekers || jobSeekers.length === 0) {
+      return res.status(404).json({ message: "No job seekers found" });
+    }
+
+    // If job seekers are found, return them
+    res.status(200).json(jobSeekers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
       // @desc    Change user password
