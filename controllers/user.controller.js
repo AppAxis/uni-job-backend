@@ -45,16 +45,16 @@ export async function signup(req, res) {
 
   let image;
   if (req.files && req.files['image'] && req.files['image'].length > 0) {
-    image = `/uploads/images/${req.files['image'][0].filename}`;
+    image = `/img/${req.files['image'][0].filename}`;
   } else {
-    image = "/uploads/images/user.png"; 
+    image = "/img/user.png"; 
   }
 
   let uploadedImages = [];
   if (req.files && req.files['images'] && req.files['images'].length > 0) {
-    uploadedImages = req.files['images'].map(file => `/uploads/images/${file.filename}`);
+    uploadedImages = req.files['images'].map(file => `/img/${file.filename}`);
   } else {
-    uploadedImages = ['/uploads/images/company.png'];
+    uploadedImages = ['/img/company.png'];
   }
 
   try {
@@ -156,7 +156,7 @@ if(timeDiff < 86400){
 })
     }
     await User.findByIdAndUpdate(user._id,{tokens:[...oldTokens,{token,signedAt:Date.now().toString()}]})
-    res.status(200).json({success: true , token: token,role: user.role});
+    res.status(200).json({success: true , token: token,role: user.role, image: user.image});
 }
 // @desc    Get user data
 // @route   Get /api/users/me
@@ -239,7 +239,7 @@ export async function editProfileImage(req, res) {
      ? req.files['image'][0].filename
      : oldImageFileName;
 
-   user.image = `/uploads/images/${newImageFileName}`;
+   user.image = `/img/${newImageFileName}`;
    await user.save();
     res.status(200).json({ message: "Profile image changed" });
   } catch (e) {
@@ -247,39 +247,36 @@ export async function editProfileImage(req, res) {
     res.status(500).json({ Error: "Server error" });
   }
 }
-// @desc    Update recruiter images
-// @route   PUT /api/users/editRecruiterImages
+// @desc    Update company images for recruiter
+// @route   PUT /api/users/editCompanyImages
 // @access  Private
-/*export async function editRecruiterImages(req, res) {
+export async function editCompanyImages(req, res) {
   try {
     const user = await User.findById(req.user._id);
 
-    if (!user) {
-      return res.status(404).json({ error: 'User not found.' });
+    if (user.role !== 'recruiter') {
+      return res.status(403).json({ error: "Unauthorized" });
     }
 
-    // Delete old images
-   user.images.forEach(async (images) => {
-      const oldImageFileName = images.split('/').pop();
-      await deleteFile(oldImageFileName, './uploads/images');
-    });
+    const oldImages = user.images;
+    const newImagesFiles = req.files && req.files['images'] ? req.files['images'] : [];
 
-    // Update images array with new image filenames
-    const newImageFileNames = req.files && req.files['images']
-      ? req.files['images'].map(file => `/uploads/images/${file.filename}`)
-      : user.images;
+    const newImagesPaths = newImagesFiles.map(file => `/img/${file.filename}`);
 
-    user.images = newImageFileNames;
+    // Optionally delete old images from the filesystem
+    for (const imgPath of oldImages) {
+      const fileName = imgPath.split('/').pop();
+      await deleteFile(fileName, './uploads/images');
+    }
 
-    // Save the updated recruiter document
+    user.images = newImagesPaths;
     await user.save();
-
-    res.status(200).json({ message: 'Recruiter images updated successfully' });
+    res.status(200).json({ message: "Company images updated successfully" });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ Error: 'Server error' });
+    res.status(500).json({ Error: "Server error" });
   }
-}*/
+}
 
 //@desc    Upload jobSeeker resume_file
 //@route   POST /api/users/uploadResumeFile
@@ -297,7 +294,7 @@ export async function editProfileImage(req, res) {
           }
   
           const file = await req.file.filename;
-          user.resume_file = `/uploads/files/${file}`;
+          user.resume_file = `/file/${file}`;
           await user.save();
   
           res.status(200).json({ message: "resume file added" });
@@ -333,7 +330,7 @@ export async function editResume(req, res) {
     const { originalname, filename } = req.file;
 
     // Build the full path of the new resume file
-    const newResumeFilePath = `/uploads/files/${filename}`;
+    const newResumeFilePath = `/file/${filename}`;
 
     // Update the resume_file field in the user document
     user.resume_file = newResumeFilePath;

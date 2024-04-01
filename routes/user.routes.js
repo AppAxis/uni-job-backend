@@ -15,6 +15,7 @@ import {
   changePassword,
   getAllJobSeekers,
   editProfileImage,
+  editCompanyImages,
   loadAuth,
   successGoogleLogin,
   failureGoogleLogin,
@@ -44,6 +45,7 @@ router.route('/uploadResumeFile').post(protect,uploadFile.single('resume_file'),
 router.route('/editprofile').put(protect, editProfile);
 router.route('/changePassword').put(protect, changePassword);
 router.route('/editProfileImage').put(protect,uploadCombinedImages, editProfileImage);
+router.route('/editCompanyImages').put(protect, uploadCombinedImages, editCompanyImages);
 router.route('/editResume').put(protect,uploadFile.single('resume_file'), editResume);
 router.route('/updatePassword').put(protect, updatePassword);
 
