@@ -247,8 +247,8 @@ export async function editProfileImage(req, res) {
     res.status(500).json({ Error: "Server error" });
   }
 }
-// @desc    Update company images for recruiter
-// @route   PUT /api/users/editCompanyImages
+// @desc    Update recruiter images
+// @route   PUT /api/users/editRecruiterImages
 // @access  Private
 export async function editCompanyImages(req, res) {
   try {

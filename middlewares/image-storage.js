@@ -27,7 +27,7 @@ const fileFilter = (req, file, callback) => {
   }
 
   const fileSize = parseInt(req.headers['content-length']);
-  if (fileSize > 10485760) {
+  if (fileSize > 20971520) {
     return callback(new Error('File Size Big'));
   }
 
@@ -37,7 +37,7 @@ const fileFilter = (req, file, callback) => {
 const uploadCombinedImages = multer({
   storage: storageCombined,
   fileFilter: fileFilter,
-  fileSize: 10485760,
+  fileSize: 20971520,
 }).fields([{ name: 'image', maxCount: 1 }, { name: 'images', maxCount: 6 }]);
 
 export { uploadCombinedImages };
