@@ -26,7 +26,7 @@ const chatSchema = new Schema(
           type: String,
           required: true,
         },
-        type: {
+        chatType: {
           type: String,
           enum: ['message', 'image', 'file'],
         },

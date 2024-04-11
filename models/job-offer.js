@@ -18,6 +18,9 @@ const jobOfferSchema = new Schema({
     long: {
       type: Number,
     },
+    address:{
+      type: String,
+    }
   },
   salary: {
     type: Number,
@@ -44,9 +47,9 @@ const jobOfferSchema = new Schema({
     type: String,
     required: true,
   },
-  type: {
+  jobType: {
     type: String,
-    enum: ['CDD', 'CDI', 'freelance', 'parttime', 'fulltime', 'remote', 'alternation']
+    enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote', 'alternation','internship']
   },
   job_responsibilities: {
     type: [String],

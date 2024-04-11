@@ -34,36 +34,40 @@ export async function signup(req, res) {
     email,
     password,
     role,
-    location,
     phone,
     domain,
     type,
     skills,
     companyName,
     bio,
+    location
   } = req.body;
-
-  let image;
-  if (req.files && req.files['image'] && req.files['image'].length > 0) {
-    image = `/img/${req.files['image'][0].filename}`;
-  } else {
-    image = "/img/user.png"; 
-  }
-
-  let uploadedImages = [];
-  if (req.files && req.files['images'] && req.files['images'].length > 0) {
-    uploadedImages = req.files['images'].map(file => `/img/${file.filename}`);
-  } else {
-    uploadedImages = ['/img/company.png'];
-  }
-
+  const { lat, long,address } = location;
   try {
-    if (!email || !password || !role) {
-      return res.status(400).json({ message: 'Please add all fields.' });
+    console.log('Received latitude:', lat);
+    console.log('Received longitude:', long);
+    console.log('Received address:', address);
+
+    if (!email || !password || !role ) {
+      return res.status(400).json({ message: 'Please add all fields' });
     }
 
     if (!['jobSeeker', 'recruiter'].includes(role)) {
       return res.status(400).json({ message: 'Invalid role specified.' });
+    }
+
+    let image;
+    if (req.files && req.files['image'] && req.files['image'].length > 0) {
+      image = `/img/${req.files['image'][0].filename}`;
+    } else {
+      image = "/img/user.png"; 
+    }
+
+    let uploadedImages = [];
+    if (req.files && req.files['images'] && req.files['images'].length > 0) {
+      uploadedImages = req.files['images'].map(file => `/img/${file.filename}`);
+    } else {
+      uploadedImages = ['/img/company.png'];
     }
 
     const userExist = await User.findOne({ email });
@@ -73,7 +77,7 @@ export async function signup(req, res) {
 
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
-    // Génération de l'OTP
+    // Generating the OTP
     const otp = otpGenerator.generate(4, { lowerCaseAlphabets: false, upperCaseAlphabets: false, specialChars: false });
     
     // Create a user instance with the necessary fields
@@ -107,7 +111,7 @@ export async function signup(req, res) {
         phone,
         domain,
         role,
-        image:image,
+        image: image,
         type,
         companyName: recruiterCompanyName || `${firstName} ${lastName}`,
         bio,
@@ -130,6 +134,7 @@ export async function signup(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+
 
   // @desc    Authenticate user
   // @route   POST /api/users/signin
@@ -156,8 +161,29 @@ if(timeDiff < 86400){
 })
     }
     await User.findByIdAndUpdate(user._id,{tokens:[...oldTokens,{token,signedAt:Date.now().toString()}]})
-    res.status(200).json({success: true , token: token,role: user.role, image: user.image});
+    res.status(200).json({success: true , token: token,role: user.role, userId :user._id,});
 }
+
+/*export async function refreshToken(req, res) {
+  try {
+   const user_id = req.user._id;
+const userData = await User.findById({_id:user_id});
+if(userData){
+  const token = generateToken(userData._id, userData.role);
+
+
+}else{
+  return res.status(403).json({error: "user not found"});
+}
+    
+    res.status(200).json({ success: true, token });
+  } catch (error) {
+    console.error('Error refreshing access token:', error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+}*/
+
+
 // @desc    Get user data
 // @route   Get /api/users/me
 // @access  Private
@@ -195,17 +221,23 @@ export async function getUserById(req, res) {
 
 export async function editProfile(req, res) {
   try {
-    const { firstName, lastName, email, location, phone, domain, type, skills, password, companyName,bio} = req.body;
-    console.log(req.body);
+    const { firstName, lastName, email, phone, domain, type, skills, password, companyName, bio, location } = req.body;
     const user = await User.findById(req.user._id);
-    console.log(user);
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
+    }
+    if (location) {
+      const { lat, long,address } = location;
+      user.location = {
+        lat,
+        long,
+        address,
+      };
     }
     user.firstName = firstName;
     user.lastName = lastName;
     user.email = email;
-    user.location = location;
     user.phone = phone;
     user.domain = domain;
     user.type = type;
@@ -216,15 +248,16 @@ export async function editProfile(req, res) {
       const hash = await bcrypt.hash(password, 10);
       user.password = hash;
     }
+
     await user.save();
+
     const token = generateToken(user._id, user.role);
-    return res.status(200).json({ message: "Profile updated successfully", data: user,token });
+    return res.status(200).json({ message: "Profile updated successfully", data: user, token });
   } catch (e) {
     console.error(e);
     res.status(500).json({ Error: "Server error" });
   }
 }
-
 // @desc    Update user profile image
 // @route   PUT /api/users/editProfileImage
 // @access  Private

@@ -27,7 +27,15 @@ const userSchema = new Schema(
       minlength: 6,
     },
     location: {
-      type: String,
+      lat: {
+        type: Number,
+      },
+      long: {
+        type: Number,
+      },
+      address:{
+        type: String,
+      }
     },
     phone: {
       type: String,

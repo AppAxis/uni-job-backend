@@ -1,33 +1,45 @@
 import { User,JobSeeker,Recruiter} from '../models/user.js';
 import JobOffer from '../models/job-offer.js';
 import JobApplication from '../models/job-application.js';
+import { format } from "date-fns";
 
 export function addJobOffer(req, res) {
-    JobOffer.create({
-        title: req.body.title,
-        employment: req.body.employment,
-        jobLocation: {
-            lat: req.body.jobLocation.lat,
-            long: req.body.jobLocation.long
-        },
-        salary: req.body.salary,
-        postedOn: req.body.postedOn,
-        beginning_date: req.body.beginning_date,
-        closingDate: req.body.closingDate,
-        maxApplications: req.body.maxApplications,
-        requirements: req.body.requirements,
-        description: req.body.description,
-        type: req.body.type,
-        job_responsibilities: req.body.job_responsibilities,
-        postedBy: req.user._id,
-    })
-    .then(newJobOffer => {
-        console.log(newJobOffer);
-        res.status(200).json(newJobOffer);
-    })
-    .catch((err) => {
-        res.status(500).json({error: err});
-    });
+    try {
+        const closingDate = format(new Date(req.body.closingDate), "yyyy-MM-dd"); 
+        const beginningDate = format(new Date(req.body.beginning_date), "yyyy-MM-dd");
+        const postedOn = format(new Date(req.body.postedOn), "yyyy-MM-dd"); 
+
+        JobOffer.create({
+            title: req.body.title,
+            employment: req.body.employment,
+            jobLocation: {
+                lat: req.body.jobLocation.lat,
+                long: req.body.jobLocation.long,
+                address: req.body.jobLocation.address,
+            },
+            salary: req.body.salary,
+            postedOn: postedOn,
+            beginning_date: beginningDate,
+            closingDate: closingDate,
+            maxApplications: req.body.maxApplications,
+            requirements: req.body.requirements,
+            description: req.body.description,
+            jobType: req.body.jobType,
+            job_responsibilities: req.body.job_responsibilities,
+            postedBy: req.user._id,
+        })
+        .then(newJobOffer => {
+            console.log(newJobOffer);
+            res.status(200).json(newJobOffer);
+        })
+        .catch((err) => {
+            console.error(err);
+            res.status(500).json({ error: err.message || 'Internal server error' });
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ error: error });
+    }
 }
 export function getAllJobOffers(req, res) {
     JobOffer.find()
