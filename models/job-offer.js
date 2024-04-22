@@ -7,9 +7,10 @@ const jobOfferSchema = new Schema({
     type: String,
     required: true,
   },
-  // full time or intern
-  employment: {
+  // jobExperience
+ jobLevel: {
     type: String,
+    enum: ['junior', 'confirmed', 'senior'],
   },
   jobLocation: {
     lat: {
@@ -29,7 +30,7 @@ const jobOfferSchema = new Schema({
     type: Date,
     default: Date.now,
   },
-  beginning_date: {
+  beginningDate: {
     type: Date,
   },
   // Add closing date for application deadline

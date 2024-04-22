@@ -472,6 +472,51 @@ export async function getAllJobSeekers(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+//  @desc    Search job Seekers
+// @route   GET /api/users/searchJobSeekers
+// @access  Private
+export async function searchJobSeekers(req, res) {
+  try {
+    const { firstName, lastName, type, skills, location } = req.query;
+    const filter = {};
+
+    // Vérifiez si le prénom et le nom de famille sont fournis dans la requête
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: 'First name and last name are required for search' });
+    }
+
+    // Ajouter des filtres si des valeurs sont fournies
+    if (type) {
+      filter.type = type;
+    }
+
+    if (skills) {
+      filter.skills = { $in: skills.split(',') }; // Supposons que les compétences soient envoyées sous forme de liste séparée par des virgules dans l'URL
+    }
+
+    if (location) {
+      filter['location.address'] = new RegExp(location, 'i');
+    }
+
+    // Construire la requête de recherche avec les filtres
+    const jobSeekers = await JobSeeker.find({
+      firstName: new RegExp(firstName, 'i'),
+      lastName: new RegExp(lastName, 'i'),
+      ...filter,
+    });
+
+    // Vérifiez si des jobSeekers ont été trouvés
+    if (!jobSeekers || jobSeekers.length === 0) {
+      return res.status(404).json({ message: 'No job seekers found with the provided criteria' });
+    }
+
+    // Si des jobSeekers sont trouvés, renvoyez-les
+    res.status(200).json(jobSeekers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
       // @desc    Change user password
     // @route   PUT /api/users/changePassword
     // @access  Private

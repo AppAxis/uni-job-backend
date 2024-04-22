@@ -14,6 +14,7 @@ import {
   updatePassword,
   changePassword,
   getAllJobSeekers,
+  searchJobSeekers,
   editProfileImage,
   editCompanyImages,
   loadAuth,
@@ -53,6 +54,7 @@ router.route('/updatePassword').put(protect, updatePassword);
 router.route('/me') .get(protect, getMe);
 router.route('/getUserById/:id').get(protect,getUserById);
 router.route('/getAllJobSeekers').get(protect,isRecruiter,getAllJobSeekers);
+router.route('/searchJobSeekers').get(protect,isRecruiter,searchJobSeekers);
 router.route('/auth').get(loadAuth);
 router.route('/auth/google')
     .get(passport.authenticate('google', { scope: ['profile', 'email'] }));

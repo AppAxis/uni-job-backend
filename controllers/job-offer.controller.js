@@ -5,13 +5,14 @@ import { format } from "date-fns";
 
 export function addJobOffer(req, res) {
     try {
-        const closingDate = format(new Date(req.body.closingDate), "yyyy-MM-dd"); 
-        const beginningDate = format(new Date(req.body.beginning_date), "yyyy-MM-dd");
-        const postedOn = format(new Date(req.body.postedOn), "yyyy-MM-dd"); 
-
+         console.log('Request Body:', req.body); // Log the request body
+        const closingDate = req.body.closingDate ? format(new Date(req.body.closingDate), "yyyy-MM-dd") : null; 
+        const beginningDate = req.body.beginningDate ? format(new Date(req.body.beginningDate), "yyyy-MM-dd") : null;
+        const postedOn = req.body.postedOn ? format(new Date(req.body.postedOn), "yyyy-MM-dd") : null; 
+        console.log('Parsed Dates:', { closingDate, beginningDate, postedOn });
         JobOffer.create({
             title: req.body.title,
-            employment: req.body.employment,
+           jobLevel: req.body.jobLevel,
             jobLocation: {
                 lat: req.body.jobLocation.lat,
                 long: req.body.jobLocation.long,
@@ -19,7 +20,7 @@ export function addJobOffer(req, res) {
             },
             salary: req.body.salary,
             postedOn: postedOn,
-            beginning_date: beginningDate,
+            beginningDate: beginningDate,
             closingDate: closingDate,
             maxApplications: req.body.maxApplications,
             requirements: req.body.requirements,
@@ -38,7 +39,7 @@ export function addJobOffer(req, res) {
         });
     } catch (error) {
         console.error(error);
-        res.status(400).json({ error: error });
+        res.status(400).json({ error: error.message || 'Bad request' });
     }
 }
 export function getAllJobOffers(req, res) {
