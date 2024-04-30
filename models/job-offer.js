@@ -7,11 +7,8 @@ const jobOfferSchema = new Schema({
     type: String,
     required: true,
   },
-  // jobExperience
- jobLevel: {
-    type: String,
-    enum: ['junior', 'confirmed', 'senior'],
-  },
+  
+
   jobLocation: {
     lat: {
       type: Number,
