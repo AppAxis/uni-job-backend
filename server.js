@@ -6,9 +6,13 @@ import dotenv from 'dotenv';
 import userRoutes from './routes/user-routes.js';
 import jobApplicationRoutes from './routes/jobApplication-routes.js';
 import jobOfferRoutes from './routes/job-offer-routes.js';
+import recruiterLikesRoutes from'./routes/recruiterLike-routes.js';
 import jobNotificationRoutes from './routes/notification-routes.js';
+import chatRoutes from './routes/chat-route.js';
 import { errorHandler } from './middlewares/errors.middleware.js';
 import {createNotification} from './controllers/notificationController.js';
+import { addSocketId, getUserConfigs } from './controllers/userConfigController.js';
+import { sendMessage } from './controllers/chatController.js';
 import passport from 'passport';
 import session from 'express-session';
 import { createServer } from "http";
@@ -54,12 +58,14 @@ app.use(errorHandler);
 app.use('/img', express.static('uploads/images'));
 app.use('/file', express.static('uploads/files'));
 
-app.set('view engine','ejs'); // set the view engine to ejs
+app.set('view engine','ejs'); 
 //api routes
 app.use('/api/users', userRoutes);
 app.use('/api/job-offers', jobOfferRoutes);
 app.use('/api/job-applications', jobApplicationRoutes);
 app.use('/api/notifications', jobNotificationRoutes);
+app.use('/api/recruiterLikes',recruiterLikesRoutes);
+app.use('/api/chat', chatRoutes);
 
 app.get('/', (req, res) => {
   res.send('welcome to UniJob');
@@ -89,11 +95,39 @@ io.use((socket, next) => {
   }
 });
 
-io.on('connection', (socket) => {
+io.on('connection', async(socket) => {
   console.log(chalk.blue(`User connected with socket id ${socket.id} and with a userid ${socket.userId}`));
 console.log(socket);
   socket.join(socket.userId);
 
+
+  try {
+    const { userId } = socket;
+    const addSocketToUserResult = await addSocketId(userId, socket.id);
+    console.log("Socket added with result ", addSocketToUserResult);
+  } catch (error) {
+    console.error("Error adding socket ID to user:", error);
+  }
+  
+  // Handle sending messages
+  socket.on("send-message", async (data) => {
+    console.log(`Message sent by ${socket.userId}: ${data.message}`);
+    const { receiverId, senderId, message ,chatId} = data;
+    const userConfigs = await getUserConfigs(receiverId);
+    console.log(userConfigs + "userConfig");
+    sendMessage("6637c44621ca955b558746db", senderId, message )
+
+    const socketsIds = userConfigs.socketIds;
+    console.log (socketsIds);
+    for (const socketId of socketsIds) {
+      io.to(socketId).emit("receive-message", {
+        content: message,
+        senderId: senderId,
+      });
+      
+    }
+
+  });
   //handle notification sending
   /*
         socket.on('notify',(notification)=>{

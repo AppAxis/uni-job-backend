@@ -53,8 +53,6 @@ export function addJobOffer(req, res) {
 export async function getJobOfferWithApplications(req, res) {
     try {
         const jobOfferId = req.params.id;
-
-        // Fetch the job offer by its ID and populate both appliedBy and jobSeeker fields
         const jobOffer = await JobOffer.findById(jobOfferId)
             .populate({
                 path: 'appliedBy',
@@ -78,7 +76,6 @@ export async function getJobOfferWithApplications(req, res) {
 export function getAllJobOffers(req, res) {
     JobOffer.find()
         .populate('postedBy')
-        .populate('appliedBy')
         .then((jobOffers) => {
             res.status(200).json({ jobOffers: jobOffers });
         })

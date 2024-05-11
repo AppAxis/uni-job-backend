@@ -20,10 +20,10 @@ router.route('/addJobOffer').post(protect,isRecruiter,addJobOffer);
 
 
 // GET Methods
-router.route('/getall').get(getAllJobOffers);
+router.route('/getAllJobOffers').get(protect,getAllJobOffers);
 router.route("/jobOffer/:id").get(getJobOfferById);
 router.route("/search").get(searchJobOffer);
-router.route('/recruiterJobOffers').get(protect, isRecruiter, getAllJobOffersForRecruiter); 
+router.route('/recruiterJobOffers').get(protect,isRecruiter, getAllJobOffersForRecruiter); 
 router.route('/jobOfferWithApplications/:id').get(protect, isRecruiter, getJobOfferWithApplications); 
 
 // PUT Methods
