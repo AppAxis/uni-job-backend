@@ -128,12 +128,30 @@ console.log(socket);
     }
 
   });
-  //handle notification sending
-  /*
-        socket.on('notify',(notification)=>{
-            console.log(notification);
-            socket.broadcast("sendNotification",notification)
-        });*/
+  socket.on("send-notification", async (data) => {
+    
+    // You can perform any additional logic here, such as fetching user configurations
+    const { receiverId, senderId, message ,title} = data;
+    console.log(`Notification sent to ${receiverId}: ${message}`);
+    const userConfigs = await getUserConfigs(receiverId);
+
+    // Emit the notification to all socket IDs associated with the receiver
+    const socketsIds = userConfigs.socketIds;
+    for (const socketId of socketsIds) {
+      io.to(socketId).emit("receive-notification", {
+        title: title,
+        message: message,
+        senderId: senderId,
+        // You can include any additional data you want to send with the notification
+      });
+    }
+  });
+  
+  // On the client side, you would listen for "receive-notification" events
+  socket.on("receive-notification", (notification) => {
+    console.log(`Received notification: ${notification.title}: ${notification.message}:${notification.senderId}`);
+    // Handle the received notification, e.g., display it to the user
+  }); 
   socket.on("notification", (notif) => {
     console.log(notif);
     socket.broadcast.emit("receive",createNotification(notif))

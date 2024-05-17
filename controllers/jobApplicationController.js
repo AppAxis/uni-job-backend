@@ -1,7 +1,7 @@
 import JobApplication from '../models/job-application.js';
 import JobOffer from '../models/job-offer.js';
 import { User,JobSeeker,Recruiter} from '../models/user.js';
-
+import {rejectApplication}from '../controllers/utils/mailer.js';
 
 export async function applyForJob(req, res) {
     try {
@@ -60,15 +60,78 @@ export async function applyForJob(req, res) {
         res.status(500).json({ error: 'Internal server error' });
     }
 }
+export async function acceptJobApplication(req, res) {
+  try {
+    const { applicationId } = req.params;
 
+    // Find the job application
+    const jobApplication = await JobApplication.findById(applicationId);
+    if (!jobApplication) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Update the status of the job application to accepted
+    jobApplication.status = 'accepted';
+    await jobApplication.save();
+
+
+
+    res.status(200).json({ message: 'Job offer accepted successfully', jobApplication });
+  } catch (error) {
+    console.error('Error accepting job offer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
+export async function declineJobApplication(req, res) {
+  try {
+    const { applicationId } = req.params;
+
+    // Trouver la candidature
+    const jobApplication = await JobApplication.findById(applicationId).populate('jobSeeker');
+    if (!jobApplication) {
+      return res.status(404).json({ error: 'Job application not found' });
+    }
+
+    // Trouver l'offre d'emploi
+    const jobOffer = await JobOffer.findById(jobApplication.jobId);
+    if (!jobOffer) {
+      return res.status(404).json({ error: 'Job offer not found' });
+    }
+
+    // Mettre à jour le statut de la candidature à "rejeté"
+    jobApplication.status = 'rejected';
+    await jobApplication.save();
+
+    // Supprimer l'ID de l'application de la liste appliedBy dans l'offre d'emploi
+    jobOffer.appliedBy.pull(applicationId);
+    await jobOffer.save();
+
+    // Envoyer un email de notification au candidat
+    if (jobApplication.jobSeeker) {
+      await rejectApplication(jobApplication.jobSeeker, jobOffer);
+    }
+
+    res.status(200).json({ message: 'Job offer declined successfully', jobApplication });
+  } catch (error) {
+    console.error('Error declining job offer:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 export async function getApplicationsForJob(req, res) {
   try {
       const jobId = req.params.jobId;
       console.log(jobId); 
       const jobApplications = await JobApplication.find({ jobId })
-          .populate('jobSeeker') 
-          .exec();
+      .populate('jobSeeker')
+      .populate({
+        path: 'jobId',
+        populate: {
+          path: 'postedBy'
+        }
+      })
+      .exec();
       if (jobApplications.length === 0) {
           return res.status(404).json({ error: 'No job applications found for this job offer' });
       }
@@ -98,22 +161,3 @@ export async function getApplicationsByJobSeeker(req, res) {
     res.status(400).json({ success:false, message: error.message });
   }
 }
-     /* const jobSeekerId = req.params.jobSeekerId;
-      console.log(jobSeekerId); 
-      const jobApplications = await JobApplication.find({ jobSeeker: jobSeekerId })
-      .populate({
-        path: 'jobId',
-        populate: {
-            path: 'postedBy',
-        }
-    })
-    .exec();
-      if (jobApplications.length === 0) {
-          return res.status(404).json({ error: 'No job applications found for this job seeker' });
-      }
-      res.status(200).json(jobApplications);*/
- /* } catch (error) {
-      console.error('Error fetching job applications for job seeker:', error);
-      res.status(500).json({ error: 'Internal server error' });
-  }
-}*/

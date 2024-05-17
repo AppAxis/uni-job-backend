@@ -49,6 +49,9 @@ const jobOfferSchema = new Schema({
     type: String,
     enum: ['CDD', 'CDI', 'freelance', 'partTime', 'fullTime', 'remote', 'alternation','internship']
   },
+  jobDomain: {
+    type: String,
+  },
   job_responsibilities: {
     type: [String],
   },
@@ -61,6 +64,12 @@ const jobOfferSchema = new Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'JobApplication',
+    },
+  ],
+  passBy: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'JobSeeker',
     },
   ],
 },

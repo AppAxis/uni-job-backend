@@ -10,6 +10,7 @@ getJobOfferWithApplications,
 fetchUserByApplicationId,
 updateMyJobOffer,
 deleteJobOffer,
+passJobOffer,
 
 } from '../controllers/jobOfferController.js';
 
@@ -31,5 +32,7 @@ router.route("/updateJobOffer/:id").put(protect, isRecruiter, updateMyJobOffer);
 
 // DELETE Methods
 router.route("/deleteJobOffer/:id").delete(protect, isRecruiter, deleteJobOffer);
+router.put('/pass/:jobId',protect, passJobOffer);
+
 
 export default router;

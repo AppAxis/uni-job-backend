@@ -32,6 +32,7 @@ export function addJobOffer(req, res) {
             maxApplications: req.body.maxApplications,
             requirements: req.body.requirements,
             description: req.body.description,
+            jobDomain:req.body.jobDomain,
             jobType: req.body.jobType,
             job_responsibilities: req.body.job_responsibilities,
             postedBy: req.user._id,
@@ -50,6 +51,29 @@ export function addJobOffer(req, res) {
         res.status(400).json({ error: error.message || 'Bad request' });
     }
 }
+export async function passJobOffer(req, res) {
+    try {
+      const { jobId } = req.params;
+  
+      // Find the job offer
+      const jobOffer = await JobOffer.findById(jobId);
+      if (!jobOffer) {
+        return res.status(404).json({ error: 'Job offer not found' });
+      }
+  
+      // Add the current user to the passBy array if they haven't already passed the job offer
+      if (!jobOffer.passBy.includes(req.user._id)) {
+        jobOffer.passBy.push(req.user._id);
+        await jobOffer.save();
+      }
+  
+      res.status(200).json({ message: 'Job offer passed successfully', jobOffer });
+    } catch (error) {
+      console.error('Error passing job offer:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+  
 export async function getJobOfferWithApplications(req, res) {
     try {
         const jobOfferId = req.params.id;

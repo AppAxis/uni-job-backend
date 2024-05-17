@@ -12,7 +12,11 @@ const likesSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'JobSeeker',
     },
-    //
+    isLike: {
+      type: Boolean,
+      required: true,
+    },
+    
     status: {
       type: String,
       enum: ['pending', 'accepted', 'rejected'],

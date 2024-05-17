@@ -4,21 +4,29 @@ const { Schema, model} = mongoose;
 const NotifSchema = new Schema (
     {
         
-        content :{
+        receiverId: { 
+            type: Schema.Types.ObjectId,
+             ref: 'User', 
+             required: true ,
+            }, 
+        senderId: { 
+            type: Schema.Types.ObjectId,
+             ref: 'User',
+              required: true ,
+            }, 
+        title: { 
             type: String,
-            required: true
+            required: true, 
         },
-        title:{
-            type: String,
-        },
-        notifDate:{
-            type: Date,
+        message: { 
+            type: String, 
+            required: true,
+         },
+        timestamp: { 
+            type: Date, 
             default: Date.now,
-        },
+         }, 
         
-    },
-    {
-        timestamps: true
-    }
-);
+      }
+      );
 export default model('Notification',NotifSchema);
