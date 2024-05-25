@@ -14,6 +14,7 @@ import {
   updatePassword,
   changePassword,
   getAllJobSeekers,
+  getAllRecruiters,
   searchJobSeekers,
   editProfileImage,
   editCompanyImages,
@@ -24,7 +25,7 @@ import {
   editResume,
   signOut,
 
-} from '../controllers/user.controller.js';
+} from '../controllers/userController.js';
 
 import passport from 'passport';
 import '../controllers/utils/googleAuth.js';
@@ -52,8 +53,9 @@ router.route('/updatePassword').put(protect, updatePassword);
 
 // GET Methods
 router.route('/me') .get(protect, getMe);
-router.route('/getUserById/:id').get(protect,getUserById);
+router.route('/getUserById/:id').get(protect,isRecruiter,getUserById);
 router.route('/getAllJobSeekers').get(protect,isRecruiter,getAllJobSeekers);
+router.route('/getAllRecruiters').get(protect,getAllRecruiters);
 router.route('/searchJobSeekers').get(protect,isRecruiter,searchJobSeekers);
 router.route('/auth').get(loadAuth);
 router.route('/auth/google')

@@ -5,14 +5,21 @@ import { format } from "date-fns";
 
 export function addJobOffer(req, res) {
     try {
-         console.log('Request Body:', req.body); // Log the request body
+         console.log('Request Body:', req.body);
         const closingDate = req.body.closingDate ? format(new Date(req.body.closingDate), "yyyy-MM-dd") : null; 
         const beginningDate = req.body.beginningDate ? format(new Date(req.body.beginningDate), "yyyy-MM-dd") : null;
         const postedOn = req.body.postedOn ? format(new Date(req.body.postedOn), "yyyy-MM-dd") : null; 
         console.log('Parsed Dates:', { closingDate, beginningDate, postedOn });
+          // Récupérez les informations d'application d'emploi du corps de la requête
+          let appliedBy = req.body.appliedBy; 
+        
+          // Si appliedBy est vide ou non défini, initialisez-le avec un tableau vide
+          if (!appliedBy) {
+              appliedBy = [];
+          }
+  
         JobOffer.create({
             title: req.body.title,
-           jobLevel: req.body.jobLevel,
             jobLocation: {
                 lat: req.body.jobLocation.lat,
                 long: req.body.jobLocation.long,
@@ -25,9 +32,11 @@ export function addJobOffer(req, res) {
             maxApplications: req.body.maxApplications,
             requirements: req.body.requirements,
             description: req.body.description,
+            jobDomain:req.body.jobDomain,
             jobType: req.body.jobType,
             job_responsibilities: req.body.job_responsibilities,
             postedBy: req.user._id,
+            appliedBy: appliedBy,
         })
         .then(newJobOffer => {
             console.log(newJobOffer);
@@ -42,10 +51,55 @@ export function addJobOffer(req, res) {
         res.status(400).json({ error: error.message || 'Bad request' });
     }
 }
+export async function passJobOffer(req, res) {
+    try {
+      const { jobId } = req.params;
+  
+      // Find the job offer
+      const jobOffer = await JobOffer.findById(jobId);
+      if (!jobOffer) {
+        return res.status(404).json({ error: 'Job offer not found' });
+      }
+  
+      // Add the current user to the passBy array if they haven't already passed the job offer
+      if (!jobOffer.passBy.includes(req.user._id)) {
+        jobOffer.passBy.push(req.user._id);
+        await jobOffer.save();
+      }
+  
+      res.status(200).json({ message: 'Job offer passed successfully', jobOffer });
+    } catch (error) {
+      console.error('Error passing job offer:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  }
+  
+export async function getJobOfferWithApplications(req, res) {
+    try {
+        const jobOfferId = req.params.id;
+        const jobOffer = await JobOffer.findById(jobOfferId)
+            .populate({
+                path: 'appliedBy',
+                populate: {
+                    path: 'jobSeeker', 
+                    model: 'JobSeeker',
+                }
+            })
+            .exec();
+        if (!jobOffer) {
+            return res.status(404).json({ error: 'Job offer not found' });
+        }
+
+        // Retourner les détails de l'offre d'emploi avec les détails des utilisateurs
+        res.status(200).json(jobOffer);
+    } catch (error) {
+        console.error('Error fetching job offer with applications:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+}
 export function getAllJobOffers(req, res) {
     JobOffer.find()
         .populate('postedBy')
-        .populate('appliedBy')
         .then((jobOffers) => {
             res.status(200).json({ jobOffers: jobOffers });
         })
@@ -89,6 +143,7 @@ export const getAllJobOffersForRecruiter = async (req, res) => {
     try {
      JobOffer.find({ postedBy: req.user._id })
      .populate('postedBy')
+   
      .then((jobOffers) => {
             res.status(200).json({ jobOffers: jobOffers });
             console.log(jobOffers);
@@ -129,4 +184,38 @@ export function deleteJobOffer(req, res) {
             console.error('Erreur lors de la suppression de l\'offre d\'emploi:', err);
             res.status(500).json({ error: 'Erreur interne du serveur' });
         });
+}
+
+
+export async function fetchUserByApplicationId(applicationId) {
+    try {
+        // Fetch the job application by application ID
+        const jobApplication = await JobApplication.findById(applicationId)
+            .populate('jobSeeker', 'image') // Populate the job seeker field with the image URL
+            .exec();
+        
+        // Check if the job application was found
+        if (!jobApplication) {
+            console.log('Job application not found');
+            return null;
+        }
+
+        // Extract the user data (job seeker) from the job application
+        const user = jobApplication.jobSeeker;
+
+        // Return the user data as a JSON object
+        if (user) {
+            return {
+                _id: user._id,
+                image: user.image,
+                // Include any other user properties as needed
+            };
+        } else {
+            console.log('User not found for the given application ID');
+            return null;
+        }
+    } catch (error) {
+        console.error(`Error fetching user by application ID: ${error}`);
+        return null;
+    }
 }

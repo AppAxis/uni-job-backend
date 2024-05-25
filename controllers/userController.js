@@ -200,19 +200,14 @@ export async function getMe(req, res) {
 // @access  Private
 export async function getUserById(req, res) {
   try {
-    // Query the User model to find a user by its ID
-    const user = await User.findById(req.params.id).exec();
-
-    // If the query is successful, send the user data as a response with a 200 status code
-    if (user) {
-      res.status(200).json(user);
-    } else {
-      // If the user is not found, send a 404 status code with an error message
-      res.status(404).json({ message: 'User not found' });
-    }
+      const user = await User.findById(req.params.id).exec();
+      if (user) {
+          res.status(200).json(user);
+      } else {
+          res.status(404).json({ message: 'User not found' });
+      }
   } catch (error) {
-    // If there's an error, send an error message with an appropriate status code
-    res.status(500).json({ message: 'Error retrieving user', error });
+      res.status(500).json({ message: 'Error retrieving user', error });
   }
 }
   // @desc    Update user data
@@ -467,6 +462,26 @@ export async function getAllJobSeekers(req, res) {
 
     // If job seekers are found, return them
     res.status(200).json(jobSeekers);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+// @desc    Get all recruiters
+// @route   GET /api/users/recruiters
+// @access  Private
+export async function getAllRecruiters(req, res) {
+  try {
+    // Find all recruiters using the Recruiter model
+    const recruiters = await Recruiter.find();
+
+    // Check if any recruiters were found
+    if (!recruiters || recruiters.length === 0) {
+      return res.status(404).json({ message: "No recruiters found" });
+    }
+
+    // If recruiters are found, return them
+    res.status(200).json(recruiters);
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Internal server error' });
