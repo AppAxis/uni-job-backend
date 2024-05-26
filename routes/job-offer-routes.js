@@ -11,7 +11,7 @@ fetchUserByApplicationId,
 updateMyJobOffer,
 deleteJobOffer,
 passJobOffer,
-
+getFilteredJobOffers,
 } from '../controllers/jobOfferController.js';
 
 const router = Router();
@@ -26,7 +26,7 @@ router.route("/jobOffer/:id").get(getJobOfferById);
 router.route("/search").get(searchJobOffer);
 router.route('/recruiterJobOffers').get(protect,isRecruiter, getAllJobOffersForRecruiter); 
 router.route('/jobOfferWithApplications/:id').get(protect, isRecruiter, getJobOfferWithApplications); 
-
+router.route('/filteredJobOffers/:userId').get(protect, getFilteredJobOffers); 
 // PUT Methods
 router.route("/updateJobOffer/:id").put(protect, isRecruiter, updateMyJobOffer);
 

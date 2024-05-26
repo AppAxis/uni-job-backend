@@ -161,3 +161,21 @@ export async function getApplicationsByJobSeeker(req, res) {
     res.status(400).json({ success:false, message: error.message });
   }
 }
+export async function getAllApplications(req, res) {
+  try {
+    const allApplications = await JobApplication.find()
+      .populate('jobSeeker')
+      .populate({
+        path: 'jobId',
+        populate: {
+          path: 'postedBy'
+        }
+      })
+      .exec();
+    
+    res.status(200).json(allApplications);
+  } catch (error) {
+    console.error('Error fetching all job applications:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}

@@ -1,5 +1,6 @@
 import UserConfigs from "../models/user-config.js"; 
 
+
 export async function getUserConfigs(userId) {
   try {
     const userConfigs = await UserConfigs.findOne({ userId: userId }); 

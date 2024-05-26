@@ -2,6 +2,7 @@ import { User,JobSeeker,Recruiter} from '../models/user.js';
 import JobOffer from '../models/job-offer.js';
 import JobApplication from '../models/job-application.js';
 import { format } from "date-fns";
+import mongoose from 'mongoose';
 
 export function addJobOffer(req, res) {
     try {
@@ -107,7 +108,41 @@ export function getAllJobOffers(req, res) {
             console.error('Error fetching job offers:', err);
             res.status(500).json({ error: 'Internal Server Error' });
         });
+
 }
+
+
+
+export async function getFilteredJobOffers(req, res) {
+  try {
+    const userId = req.params.userId; // Retrieve the user ID from request params
+    const objectId = new mongoose.Types.ObjectId(userId); // Convert to ObjectId
+
+    // Find all job applications by this job seeker
+    const applications = await JobApplication.find({ jobSeeker: objectId }).select('jobId');
+    const appliedJobIds = applications.map(application => application.jobId);
+
+    // Find job offers where the user has not applied and has not passed
+    const jobOffers = await JobOffer.find({
+      $and: [
+        { _id: { $nin: appliedJobIds } },
+        { passBy: { $nin: [objectId] } }
+      ]
+    }).populate('postedBy');
+
+    // Check if any job offers were found
+    if (!jobOffers || jobOffers.length === 0) {
+      return res.status(404).json({ message: "No job offers found" });
+    }
+
+    // If job offers are found, return them
+    res.status(200).json({ jobOffers });
+  } catch (error) {
+    console.error('Error fetching job offers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+
 export function getJobOfferById(req, res) {
     const jobOfferId = req.params.id;
     JobOffer.findById(jobOfferId)

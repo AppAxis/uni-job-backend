@@ -3,7 +3,9 @@ import { User,JobSeeker,Recruiter} from '../models/user.js';
 import generateToken from './utils/generateToken.js';
 import otpGenerator from 'otp-generator';
 import { resetMail } from "./utils/mailer.js";
-import fs from "fs"
+import fs from "fs";
+import mongoose from 'mongoose';
+import Likes from '../models/recruiter-like.js';
 
 
 /** verify user */
@@ -464,6 +466,32 @@ export async function getAllJobSeekers(req, res) {
     res.status(200).json(jobSeekers);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
+export async function getJobSeekersWithoutLikesByRecruiterId(req, res) {
+  try {
+    const recruiterId = req.params.recruiterId; // Retrieve the recruiter ID from request params
+
+    // Ensure that recruiterId is a valid ObjectId
+    const recruiterObjectId = new mongoose.Types.ObjectId(recruiterId);
+
+    // Find job seekers who have been liked by this recruiter
+    const likes = await Likes.find({ recruiter_id: recruiterObjectId }).select('jobSeeker_id');
+    const likedJobSeekerIds = likes.map(like => like.jobSeeker_id);
+
+    // Find job seekers who are not in the likedJobSeekerIds list
+    const jobSeekers = await JobSeeker.find({ _id: { $nin: likedJobSeekerIds } });
+
+    // Check if any job seekers were found
+    if (!jobSeekers || jobSeekers.length === 0) {
+      return res.status(404).json({ message: "No job seekers found" });
+    }
+
+    // If job seekers are found, return them
+    res.status(200).json(jobSeekers);
+  } catch (error) {
+    console.error('Error finding job seekers:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -11,8 +11,10 @@ const messageSchema = new Schema({
 const chatSchema = new Schema({
   participants: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   messages: [messageSchema],
+}, {
+  timestamps: true,
 });
 
 const Chat = model('Chat', chatSchema);
 
-export { Chat};
+export { Chat };

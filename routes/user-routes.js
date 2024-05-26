@@ -24,6 +24,7 @@ import {
   uploadResumeFile,
   editResume,
   signOut,
+  getJobSeekersWithoutLikesByRecruiterId,
 
 } from '../controllers/userController.js';
 
@@ -57,6 +58,7 @@ router.route('/getUserById/:id').get(protect,isRecruiter,getUserById);
 router.route('/getAllJobSeekers').get(protect,isRecruiter,getAllJobSeekers);
 router.route('/getAllRecruiters').get(protect,getAllRecruiters);
 router.route('/searchJobSeekers').get(protect,isRecruiter,searchJobSeekers);
+router.route('/jobSeekersWithoutLikes/:recruiterId').get(protect, isRecruiter, getJobSeekersWithoutLikesByRecruiterId);
 router.route('/auth').get(loadAuth);
 router.route('/auth/google')
     .get(passport.authenticate('google', { scope: ['profile', 'email'] }));

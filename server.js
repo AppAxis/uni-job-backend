@@ -115,7 +115,7 @@ console.log(socket);
     const { receiverId, senderId, message ,chatId} = data;
     const userConfigs = await getUserConfigs(receiverId);
     console.log(userConfigs + "userConfig");
-    sendMessage("6637c44621ca955b558746db", senderId, message )
+    sendMessage(chatId, senderId, message )
 
     const socketsIds = userConfigs.socketIds;
     console.log (socketsIds);
