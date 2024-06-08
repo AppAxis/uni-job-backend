@@ -111,8 +111,6 @@ export function getAllJobOffers(req, res) {
 
 }
 
-
-
 export async function getFilteredJobOffers(req, res) {
   try {
     const userId = req.params.userId; // Retrieve the user ID from request params

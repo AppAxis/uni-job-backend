@@ -2,6 +2,9 @@ import JobApplication from '../models/job-application.js';
 import JobOffer from '../models/job-offer.js';
 import { User,JobSeeker,Recruiter} from '../models/user.js';
 import {rejectApplication}from '../controllers/utils/mailer.js';
+import fetch from "node-fetch";
+import axios from 'axios';
+import { json } from "express";
 
 export async function applyForJob(req, res) {
     try {
@@ -179,3 +182,4 @@ export async function getAllApplications(req, res) {
     res.status(500).json({ error: 'Internal server error' });
   }
 }
+

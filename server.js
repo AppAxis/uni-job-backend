@@ -9,6 +9,7 @@ import jobOfferRoutes from './routes/job-offer-routes.js';
 import recruiterLikesRoutes from'./routes/recruiterLike-routes.js';
 import jobNotificationRoutes from './routes/notification-routes.js';
 import chatRoutes from './routes/chat-route.js';
+import paymentRoutes from './routes/payement-route.js';
 import { errorHandler } from './middlewares/errors.middleware.js';
 import {createNotification} from './controllers/notificationController.js';
 import { addSocketId, getUserConfigs } from './controllers/userConfigController.js';
@@ -66,6 +67,7 @@ app.use('/api/job-applications', jobApplicationRoutes);
 app.use('/api/notifications', jobNotificationRoutes);
 app.use('/api/recruiterLikes',recruiterLikesRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/payements',paymentRoutes);
 
 app.get('/', (req, res) => {
   res.send('welcome to UniJob');

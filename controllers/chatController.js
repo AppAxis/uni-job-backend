@@ -37,30 +37,30 @@ export async function createChat(req, res) {
   }
 }
   // Example function: Send a message
-export async function sendMessage(chatId, sender, content ) {
+  export async function sendMessage(chatId, sender, content) {
     try {
-  
-      // Check if chatId, sender, and content are provided
       if (!chatId || !sender || !content) {
-        return null
+        return null;
       }
   
-      // Find the chat by ID
       const chat = await Chat.findById(chatId);
       if (!chat) {
-        return null
+        return null;
       }
   
-      // Add the message to the chat
-      chat.messages.push({ sender, content });
+      const newMessage = { sender, content, timestamp: new Date() };
+      chat.messages.push(newMessage);
+  
+      // Mettre à jour le dernier message
+      chat.lastMessage = { content, timestamp: new Date() };
       await chat.save();
   
-      return chat
+      return chat;
     } catch (error) {
       console.error(error);
-return null;    }
+      return null;
+    }
   }
-  
   // Example function: Get messages with participants
 export async function getMessagesWithParticipants(req, res) {
     try {
@@ -97,50 +97,51 @@ export async function getMessagesWithParticipants(req, res) {
   }
   export async function getChatsByUserId(req, res) {
     try {
-        const userId = req.params.userId;
-        console.log(`Fetching chats for user ID: ${userId}`);
-
-        // Check if the user exists
-        const user = await User.findById(userId);
-        if (!user) {
-            console.log('User not found');
-            return res.status(404).json({ error: 'User not found.' });
-        }
-        console.log('User found:', user);
-
-        // Find chats where the user is a participant and populate participant details
-        const chats = await Chat.find({ participants: userId })
-            .populate('participants', 'firstName lastName image email companyName');
-        console.log('Chats found:', chats);
-
-        // Structure the response to include chat details and participant data
-        const chatResponses = chats.map(chat => {
-            const lastMessage = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
-            console.log(`Processing chat ID: ${chat._id}, Last message: ${lastMessage}`);
-            
-            return {
-                _id: chat._id,
-                participants: chat.participants.map(participant => ({
-                    _id: participant._id,
-                    firstName: participant.firstName,
-                    lastName: participant.lastName,
-                    image: participant.image,
-                    email: participant.email,
-                    companyName: participant.companyName,
-                })),
-                lastMessage: lastMessage ? {
-                    content: lastMessage.content,
-                    timestamp: lastMessage.timestamp,
-                } : null,
-                createdAt: chat.createdAt,
-                updatedAt: chat.updatedAt,
-            };
-        });
-        console.log('Chat responses structured:', chatResponses);
-
-        return res.status(200).json({ chats: chatResponses });
+      const userId = req.params.userId;
+      console.log(`Fetching chats for user ID: ${userId}`);
+  
+      const user = await User.findById(userId);
+      if (!user) {
+        console.log('User not found');
+        return res.status(404).json({ error: 'User not found.' });
+      }
+      console.log('User found:', user);
+  
+      const chats = await Chat.find({ participants: userId })
+        .populate('participants', 'firstName lastName image email companyName');
+  
+      console.log('Chats found:', chats);
+  
+      const chatResponses = chats.map(chat => {
+        const lastMessage = chat.messages.length > 0 ? chat.messages[chat.messages.length - 1] : null;
+        console.log('Last message for chat ID:', chat._id, lastMessage);
+  
+        return {
+          _id: chat._id,
+          participants: chat.participants.map(participant => ({
+            _id: participant._id,
+            firstName: participant.firstName,
+            lastName: participant.lastName,
+            image: participant.image,
+            email: participant.email,
+            companyName: participant.companyName,
+        
+          })),
+          lastMessage: lastMessage ? {
+            content: lastMessage.content,
+            timestamp: lastMessage.timestamp,
+            sender: lastMessage.sender
+          } : null,
+          createdAt: chat.createdAt,
+          updatedAt: chat.updatedAt,
+        };
+      });
+  
+      console.log('Chat responses structured:', chatResponses);
+  
+      return res.status(200).json({ chats: chatResponses });
     } catch (error) {
-        console.error('Error in getChatsByUserId:', error);
-        res.status(500).json({ error: 'Internal server error' });
+      console.error('Error in getChatsByUserId:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-}
+  }

@@ -9,6 +9,7 @@ const router = Router();
 // Post methods
 router.route('/apply').post(protect,applyForJob); 
 
+
 // GET Methods
 router.route('/application/:id').get(protect, isRecruiter,getApplicationById);
 router.route('/applications/:jobId').get(protect,isRecruiter,getApplicationsForJob);
