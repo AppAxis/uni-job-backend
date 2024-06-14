@@ -24,6 +24,7 @@ import {
   uploadResumeFile,
   editResume,
   signOut,
+  updateUserCoins,
   getJobSeekersWithoutLikesByRecruiterId,
 
 } from '../controllers/userController.js';
@@ -51,7 +52,7 @@ router.route('/editProfileImage').put(protect,uploadCombinedImages, editProfileI
 router.route('/editCompanyImages').put(protect, uploadCombinedImages, editCompanyImages);
 router.route('/editResume').put(protect,uploadFile.single('resume_file'), editResume);
 router.route('/updatePassword').put(protect, updatePassword);
-
+router.route('/:id/update-coins').put(protect,updateUserCoins)
 // GET Methods
 router.route('/me') .get(protect, getMe);
 router.route('/getUserById/:id').get(protect,isRecruiter,getUserById);

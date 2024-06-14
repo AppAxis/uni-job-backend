@@ -641,6 +641,29 @@ export async function signOut(req, res) {
   }
 }
 
+export async function updateUserCoins(req, res) {
+  const userId = req.params.id;
+  const { coins } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update the user's coin balance
+    user.coins = (user.coins || 0) + coins;
+    await user.save();
+
+    res.status(200).json({
+      message: 'User coins updated successfully',
+      coins: user.coins,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 
 
